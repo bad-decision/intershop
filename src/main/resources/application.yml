@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: intershop
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/shop}
+    driver-class-name: org.postgresql.Driver
+    username: ${DATASOURCE_USER:shop}
+    password: ${DATASOURCE_PASSWORD:shop}
+  jpa:
+    database: postgresql
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+
+server:
+  port: 8080
+
+shop:
+  defaultPageSize: 5
+  defaultPageNumber: 1
+

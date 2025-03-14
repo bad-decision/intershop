@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Витрина товаров</title>
+    <link rel="stylesheet" th:href="@{|/css/bootstrap.min.css|}" crossorigin="anonymous">
+</head>
+
+<body style="width: 80%; margin: 0 auto">
+    <div style="display: flex; justify-content: right; height: 50px">
+        <a href="/orders">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-lines-fill" viewBox="0 0 16 16">
+                <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5m.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1zm0 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1z"/>
+            </svg>
+            <span>ЗАКАЗЫ</span>
+        </a>
+        <a href="/cart" style="margin-left: 20px">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-basket3-fill" viewBox="0 0 16 16">
+                <path d="M5.757 1.071a.5.5 0 0 1 .172.686L3.383 6h9.234L10.07 1.757a.5.5 0 1 1 .858-.514L13.783 6H15.5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H.5a.5.5 0 0 1-.5-.5v-1A.5.5 0 0 1 .5 6h1.717L5.07 1.243a.5.5 0 0 1 .686-.172zM2.468 15.426.943 9h14.114l-1.525 6.426a.75.75 0 0 1-.729.574H3.197a.75.75 0 0 1-.73-.574z"/>
+            </svg>
+            <span>КОРЗИНА</span>
+        </a>
+    </div>
+    <h1 style="text-align: center; margin: 20px;">Красное&Белое</h1>
+
+    <form>
+        <div style="display: flex; flex-direction: row; justify-content: center">
+            <div class="form-floating" style="width:350px; display: flex">
+                <input id="search" style="width:300px;" name="search" th:value="${search}" class="form-control">
+                <label for="search">Найти: </label>
+                <button name="action" class="btn">&#128269;</button>
+            </div>
+            <div class="form-floating" style="width:300px; margin: 0 20px">
+                <select id="sort" name="sort" onchange="this.form.submit()" class="form-control">
+                    <option value="NO" th:selected="${sort=='NO'}">нет</option>
+                    <option value="ALPHA" th:selected="${sort=='ALPHA'}">по алфавиту</option>
+                    <option value="PRICE" th:selected="${sort=='PRICE'}">по цене</option>
+                </select>
+                <label for="sort">Сортировка: </label>
+            </div>
+            <div class="form-floating" style="width:300px;">
+                <select id="pageSize" name="pageSize" onchange="this.form.submit()" class="form-control">
+                    <option value="5" th:selected="${paging.getPageSize()==5}">5</option>
+                    <option value="10" th:selected="${paging.getPageSize()==10}">10</option>
+                    <option value="20" th:selected="${paging.getPageSize()==20}">20</option>
+                    <option value="50" th:selected="${paging.getPageSize()==50}">50</option>
+                    <option value="100" th:selected="${paging.getPageSize()==100}">100</option>
+                </select>
+                <label for="pageSize">Число товаров: </label>
+            </div>
+        </div>
+
+        <div style="text-align: right">
+            <button th:if="${paging.isHasPrevious()}" name="pageNumber" th:value="${paging.getPageNumber()-1}" class="btn btn-primary">&lt;</button>
+            <span th:text="${'Страница: '+paging.getPageNumber()}"></span>
+            <button th:if="${paging.isHasNext()}" name="pageNumber" th:value="${paging.getPageNumber()+1}" class="btn btn-primary">&gt;</button>
+        </div>
+    </form>
+    <div style="display: flex; flex-wrap: wrap; text-align: center; justify-content: center">
+        <div th:each="item : ${items}" style="width: 400px; padding: 10px">
+            <a th:href="${'/items/'+item.getId()}">
+                <img width="300" height="300" th:src="${'/images/'+item.getImgPath()}" alt="">
+            </a>
+            <p><b th:text="${item.getTitle()}"></b></p>
+            <p><b th:text="${item.getPrice()}+' руб.'"></b></p>
+            <p><span th:text="${item.getDescription()}"></span></p>
+            <div>
+                <form th:action="${'/main/items/'+item.getId()}" method="post">
+                    <div style="display: inline-block" th:if="${item.getCount()!=0}">
+                        <button name="action" value="MINUS" class="btn btn-primary">-</button>
+                        <span th:text="${item.getCount()}" style="margin: 5px"></span>
+                        <button name="action" value="PLUS" class="btn btn-primary">+</button>
+                    </div>
+                    <button name="action" value="PLUS" th:if="${item.getCount()==0}" class="btn btn-primary">В корзину</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script th:src="@{|/js/bootstrap.min.js|}" crossorigin="anonymous"></script>
+
+</body>
+
+</html>

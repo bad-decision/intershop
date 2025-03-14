@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Заказы</title>
+    <link rel="stylesheet" th:href="@{|/css/bootstrap.min.css|}" crossorigin="anonymous">
+</head>
+
+<body style="width: 80%; margin: 0 auto">
+<div style="display: flex; justify-content: right; height: 50px">
+    <a href="/main/items">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-house-door-fill" viewBox="0 0 16 16">
+            <path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5"/>
+        </svg>
+        <span>ГЛАВНАЯ</span>
+    </a>
+    <a href="/cart" style="margin-left: 20px">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-basket3-fill" viewBox="0 0 16 16">
+            <path d="M5.757 1.071a.5.5 0 0 1 .172.686L3.383 6h9.234L10.07 1.757a.5.5 0 1 1 .858-.514L13.783 6H15.5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H.5a.5.5 0 0 1-.5-.5v-1A.5.5 0 0 1 .5 6h1.717L5.07 1.243a.5.5 0 0 1 .686-.172zM2.468 15.426.943 9h14.114l-1.525 6.426a.75.75 0 0 1-.729.574H3.197a.75.75 0 0 1-.73-.574z"/>
+        </svg>
+        <span>КОРЗИНА</span>
+    </a>
+</div>
+<h1 style="text-align: center; margin: 20px;">Заказы</h1>
+<table>
+    <tr th:each="order : ${orders}">
+        <td>
+            <h2>
+                <a th:text="${'Заказ №'+order.getId()}" th:href="${'/orders/'+order.getId()}"></a>
+            </h2>
+            <table>
+                <tr th:each="item : ${order.getOrderItems()}">
+                    <td th:text="${item.getTitle()+' ('+item.getCount()+' шт.) '+(item.getPrice()*item.getCount())+' руб.'}"></td>
+                </tr>
+            </table>
+            <p>
+                <b th:text="${'Сумма: '+order.getTotalSum()}+' руб.'"></b>
+            </p>
+        </td>
+    </tr>
+</table>
+<script th:src="@{|/js/bootstrap.min.js|}" crossorigin="anonymous"></script>
+</body>
+
+</html>
