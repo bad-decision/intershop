@@ -10,10 +10,8 @@ import ru.azmeev.intershop.repository.CartItemRepository;
 import ru.azmeev.intershop.repository.ItemRepository;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CartItemRepositoryIT extends IntegrationTestBase {
 
@@ -27,38 +25,36 @@ class CartItemRepositoryIT extends IntegrationTestBase {
 
     @BeforeEach
     void initCartItems() {
-        expectedItem = itemRepository.findById(ITEM_ID).orElse(null);
+        executeSqlBlocking(initDataSql);
+
+        expectedItem = itemRepository.findById(ITEM_ID).block();
         CartItemEntity cartItem = new CartItemEntity();
         cartItem.setCount(ITEM_COUNT);
-        cartItem.setItem(expectedItem);
-        cartItemRepository.save(cartItem);
+        cartItem.setItemId(ITEM_ID);
+        cartItemRepository.save(cartItem).block();
     }
 
     @Test
     void getCartItems_mustReturnList() {
-        List<CartItemEntity> cartItems = cartItemRepository.getCartItems();
-        ItemEntity item = cartItems.get(0).getItem();
-        assertEquals(expectedItem.getId(), item.getId());
-        assertEquals(expectedItem.getTitle(), item.getTitle());
+        List<CartItemEntity> cartItems = cartItemRepository.getCartItems().collectList().block();
+        Long itemId = cartItems.get(0).getItemId();
+        assertEquals(expectedItem.getId(), itemId);
         assertEquals(ITEM_COUNT, cartItems.get(0).getCount());
         assertEquals(1, cartItems.size());
     }
 
     @Test
     void findByItem_mustReturnItem() {
-        Optional<CartItemEntity> cartItem = cartItemRepository.findByItem(ITEM_ID);
-        assertTrue(cartItem.isPresent());
-        ItemEntity item = cartItem.get().getItem();
-        assertEquals(expectedItem.getId(), item.getId());
-        assertEquals(expectedItem.getTitle(), item.getTitle());
+        CartItemEntity cartItem = cartItemRepository.findByItem(ITEM_ID).block();
+        Long itemId = cartItem.getItemId();
+        assertEquals(expectedItem.getId(), itemId);
     }
 
     @Test
     void findByItems_mustReturnList() {
-        List<CartItemEntity> cartItems = cartItemRepository.findByItems(List.of(ITEM_ID));
-        ItemEntity item = cartItems.get(0).getItem();
-        assertEquals(expectedItem.getId(), item.getId());
-        assertEquals(expectedItem.getTitle(), item.getTitle());
+        List<CartItemEntity> cartItems = cartItemRepository.findByItems(List.of(ITEM_ID)).collectList().block();
+        Long itemId = cartItems.get(0).getItemId();
+        assertEquals(expectedItem.getId(), itemId);
         assertEquals(ITEM_COUNT, cartItems.get(0).getCount());
         assertEquals(1, cartItems.size());
     }

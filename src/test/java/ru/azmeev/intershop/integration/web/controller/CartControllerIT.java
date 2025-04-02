@@ -3,42 +3,43 @@ package ru.azmeev.intershop.integration.web.controller;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.servlet.view.InternalResourceViewResolver;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.BodyInserters;
 import ru.azmeev.intershop.integration.IntegrationTestBase;
-import ru.azmeev.intershop.web.controller.CartController;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class CartControllerIT extends IntegrationTestBase {
 
     @Autowired
-    private CartController cartController;
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
 
     @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(cartController)
-                .setViewResolvers(new InternalResourceViewResolver("/templates/", ".html"))
-                .build();
+    public void setUp() {
+        executeSqlBlocking(initDataSql);
     }
 
     @Test
     void getCart_shouldReturnHtmlWithCart() throws Exception {
-        mockMvc.perform(get("/cart"))
-                .andExpect(status().isOk())
-                .andExpect(model().attributeExists("cart"))
-                .andExpect(view().name("cart"));
+        webTestClient.get()
+                .uri("/cart")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.TEXT_HTML)
+                .expectBody(String.class).consumeWith(response -> {
+                    String body = response.getResponseBody();
+                    assertNotNull(body);
+                });
     }
 
     @Test
     void updateCartItemCount_shouldReturnRedirect() throws Exception {
-        mockMvc.perform(post("/cart/items/1")
-                        .param("action", "PLUS"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/cart"));
+        webTestClient.post()
+                .uri("/cart/items/1")
+                .body(BodyInserters.fromFormData("action", "PLUS"))
+                .exchange()
+                .expectStatus().is3xxRedirection()
+                .expectHeader().valueEquals("Location", "/cart");
     }
 }

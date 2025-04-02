@@ -3,63 +3,67 @@ package ru.azmeev.intershop.integration.web.controller;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.servlet.view.InternalResourceViewResolver;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import ru.azmeev.intershop.integration.IntegrationTestBase;
 import ru.azmeev.intershop.model.entity.OrderEntity;
 import ru.azmeev.intershop.model.enums.ActionType;
 import ru.azmeev.intershop.service.CartService;
 import ru.azmeev.intershop.service.OrderService;
-import ru.azmeev.intershop.web.controller.OrderController;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class OrderControllerIT extends IntegrationTestBase {
 
     @Autowired
-    private OrderController orderController;
-    @Autowired
     private CartService cartService;
     @Autowired
     private OrderService orderService;
-    private MockMvc mockMvc;
+    @Autowired
+    private WebTestClient webTestClient;
 
     @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(orderController)
-                .setViewResolvers(new InternalResourceViewResolver("/templates/", ".html"))
-                .build();
+    public void setUp() {
+        executeSqlBlocking(initDataSql);
     }
 
     @Test
-    void getOrders_shouldReturnHtmlWithOrders() throws Exception {
-        mockMvc.perform(get("/orders"))
-                .andExpect(status().isOk())
-                .andExpect(model().attributeExists("orders"))
-                .andExpect(view().name("orders"));
+    void getOrders_shouldReturnHtmlWithOrders() {
+        webTestClient.get()
+                        .uri("/orders")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.TEXT_HTML)
+                .expectBody(String.class).consumeWith(response -> {
+                    String body = response.getResponseBody();
+                    assertNotNull(body);
+                });
     }
 
     @Test
-    void getOrder_shouldReturnHtmlWithOrder() throws Exception {
-        cartService.updateCartItemCount(1L, ActionType.PLUS);
-        OrderEntity order = orderService.createOrder();
+    void getOrder_shouldReturnHtmlWithOrder() {
+        cartService.updateCartItemCount(1L, ActionType.PLUS).block();
+        OrderEntity order = orderService.createOrder().block();
 
-        mockMvc.perform(get("/orders/" + order.getId()))
-                .andExpect(status().isOk())
-                .andExpect(model().attributeExists("order"))
-                .andExpect(model().attributeExists("newOrder"))
-                .andExpect(view().name("order"));
+        webTestClient.get()
+                .uri("/orders/" + order.getId())
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.TEXT_HTML)
+                .expectBody(String.class).consumeWith(response -> {
+                    String body = response.getResponseBody();
+                    assertNotNull(body);
+                });
     }
 
     @Test
-    void createOrder_shouldReturnRedirect() throws Exception {
-        cartService.updateCartItemCount(1L, ActionType.PLUS);
+    void createOrder_shouldReturnRedirect() {
+        cartService.updateCartItemCount(1L, ActionType.PLUS).block();
 
-        mockMvc.perform(post("/buy"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/orders/1?newOrder=true"));
+        webTestClient.post()
+                .uri("/buy")
+                .exchange()
+                .expectStatus().is3xxRedirection()
+                .expectHeader().valueEquals("Location", "/orders/1?newOrder=true");
     }
 }

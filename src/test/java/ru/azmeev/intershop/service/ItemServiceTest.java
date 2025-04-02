@@ -9,22 +9,23 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import ru.azmeev.intershop.model.entity.CartItemEntity;
 import ru.azmeev.intershop.model.entity.ItemEntity;
 import ru.azmeev.intershop.repository.CartItemRepository;
 import ru.azmeev.intershop.repository.ItemRepository;
 import ru.azmeev.intershop.service.impl.ItemServiceImpl;
-import ru.azmeev.intershop.web.dto.ItemDto;
 import ru.azmeev.intershop.web.dto.ItemFilterDto;
 import ru.azmeev.intershop.web.mapper.ItemMapper;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class})
 class ItemServiceTest {
@@ -52,38 +53,48 @@ class ItemServiceTest {
         testCartItem = new CartItemEntity();
         testCartItem.setId(CART_ITEM_ID);
         testCartItem.setCount(2L);
-        testCartItem.setItem(testItem);
+        testCartItem.setItemId(ITEM_ID);
     }
 
     @Test
     void searchItems_success() {
         Page<ItemEntity> page = new PageImpl<>(List.of(testItem));
-        doReturn(page).when(itemRepository).filterItems(any(), any());
-        doReturn(List.of(testCartItem)).when(cartItemRepository).findByItems(any());
-
+        when(itemRepository.filterItems(any(), any())).thenReturn(Flux.just(testItem));
+        when(itemRepository.countFilteredItems(any())).thenReturn(Mono.just(1L));
+        when(cartItemRepository.findByItems(any())).thenReturn(Flux.just(testCartItem));
         ItemFilterDto filter = ItemFilterDto.builder()
                 .pageNumber(1)
                 .pageSize(1)
                 .search("text")
                 .build();
-        Page<ItemDto> result = itemService.searchItems(filter);
-        assertEquals(1, result.getTotalElements());
-        assertEquals(testCartItem.getCount(), result.getContent().get(0).getCount());
+
+        StepVerifier.create(itemService.searchItems(filter))
+                .assertNext(result -> {
+                    assertEquals(1, result.getTotalElements());
+                    assertEquals(testCartItem.getCount(), result.getContent().get(0).getCount());
+                })
+                .verifyComplete();
     }
 
     @Test
     void getItem_success() {
-        doReturn(Optional.of(testItem)).when(itemRepository).findById(ITEM_ID);
-        doReturn(Optional.empty()).when(cartItemRepository).findByItem(any());
+        when(itemRepository.findById(ITEM_ID)).thenReturn(Mono.just(testItem));
+        when(cartItemRepository.findByItem(ITEM_ID)).thenReturn(Mono.empty());
 
-        ItemDto item = itemService.getItem(ITEM_ID);
-        assertEquals(testItem.getId(), item.getId());
-        assertEquals(0, item.getCount());
+        StepVerifier.create(itemService.getItem(ITEM_ID))
+                .assertNext(item -> {
+                    assertNotNull(item);
+                    assertEquals(testItem.getId(), item.getId());
+                    assertEquals(0, item.getCount());
+                })
+                .verifyComplete();
     }
 
     @Test
     void getItem_throwException() {
-        doReturn(Optional.empty()).when(itemRepository).findById(ITEM_ID);
-        assertThrows(IllegalArgumentException.class, () -> itemService.getItem(ITEM_ID));
+        when(itemRepository.findById(ITEM_ID)).thenReturn(Mono.empty());
+
+        StepVerifier.create(itemService.getItem(ITEM_ID))
+                .verifyError(IllegalArgumentException.class);
     }
 }

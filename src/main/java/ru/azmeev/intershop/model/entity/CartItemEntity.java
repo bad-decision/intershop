@@ -1,21 +1,20 @@
 package ru.azmeev.intershop.model.entity;
 
-import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 @Getter
 @Setter
-@Entity(name = "shop_CartItem")
 @Table(name = "SHOP_CART_ITEM")
 public class CartItemEntity extends BaseEntity {
-    @JoinColumn(name = "ITEM_ID", nullable = false)
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @Column("ITEM_ID")
     @NotNull
-    private ItemEntity item;
+    private Long itemId;
 
-    @Column(name = "COUNT", nullable = false)
+    @Column("COUNT")
     @NotNull
     private Long count;
 }

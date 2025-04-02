@@ -7,23 +7,24 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import ru.azmeev.intershop.model.entity.CartItemEntity;
 import ru.azmeev.intershop.model.entity.ItemEntity;
 import ru.azmeev.intershop.model.entity.OrderEntity;
 import ru.azmeev.intershop.model.entity.OrderItemEntity;
 import ru.azmeev.intershop.repository.CartItemRepository;
+import ru.azmeev.intershop.repository.ItemRepository;
 import ru.azmeev.intershop.repository.OrderItemRepository;
 import ru.azmeev.intershop.repository.OrderRepository;
 import ru.azmeev.intershop.service.impl.OrderServiceImpl;
-import ru.azmeev.intershop.web.dto.OrderDto;
 import ru.azmeev.intershop.web.mapper.OrderItemMapper;
 import ru.azmeev.intershop.web.mapper.OrderMapper;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class})
@@ -34,6 +35,8 @@ class OrderServiceTest {
     private OrderItemRepository orderItemRepository;
     @Mock
     private CartItemRepository cartItemRepository;
+    @Mock
+    private ItemRepository itemRepository;
     @Spy
     private OrderItemMapper orderItemMapper = new OrderItemMapper();
     @Spy
@@ -46,10 +49,12 @@ class OrderServiceTest {
     private static final Long CART_ITEM_ID = 1L;
     private CartItemEntity testCartItem;
     private OrderEntity testOrder;
+    private OrderItemEntity testOrderItem;
+    private ItemEntity testItem;
 
     @BeforeEach
     void prepare() {
-        ItemEntity testItem = new ItemEntity();
+        testItem = new ItemEntity();
         testItem.setId(ITEM_ID);
         testItem.setPrice(100.0);
         testItem.setTitle("ITEM");
@@ -57,56 +62,71 @@ class OrderServiceTest {
         testCartItem = new CartItemEntity();
         testCartItem.setId(CART_ITEM_ID);
         testCartItem.setCount(2L);
-        testCartItem.setItem(testItem);
+        testCartItem.setItemId(ITEM_ID);
 
-        OrderItemEntity orderItem = new OrderItemEntity();
-        orderItem.setTitle(testItem.getTitle());
-        orderItem.setPrice(testItem.getPrice());
-        orderItem.setCount(2L);
+        testOrderItem = new OrderItemEntity();
+        testOrderItem.setTitle(testItem.getTitle());
+        testOrderItem.setPrice(testItem.getPrice());
+        testOrderItem.setCount(2L);
+        testOrderItem.setOrderId(ORDER_ID);
+        testOrderItem.setItemId(ITEM_ID);
 
         testOrder = new OrderEntity();
         testOrder.setId(ORDER_ID);
-        testOrder.setOrderItems(List.of(orderItem));
     }
 
     @Test
     void createOrder_success() {
-        doReturn(List.of(testCartItem)).when(cartItemRepository).getCartItems();
-        doReturn(testOrder).when(orderRepository).save(any());
-        doReturn(Optional.of(testOrder)).when(orderRepository).findById(any());
+        when(cartItemRepository.getCartItems()).thenReturn(Flux.just(testCartItem));
+        when(itemRepository.findByIds(List.of(ITEM_ID))).thenReturn(Flux.just(testItem));
+        when(orderRepository.save(any())).thenReturn(Mono.just(testOrder));
+        when(orderItemRepository.saveAll((Iterable<OrderItemEntity>) any())).thenReturn(Flux.empty());
+        when(cartItemRepository.deleteAll(List.of(testCartItem))).thenReturn(Flux.empty().then());
 
-        OrderEntity order = orderService.createOrder();
-        assertEquals(testOrder.getId(), order.getId());
-        assertEquals(testOrder.getOrderItems().size(), order.getOrderItems().size());
-        assertEquals(testOrder.getOrderItems().get(0).getPrice(), order.getOrderItems().get(0).getPrice());
-        verify(cartItemRepository, times(1)).deleteAll(any());
+        StepVerifier.create(orderService.createOrder())
+                .assertNext(order -> {
+                    assertEquals(testOrder.getId(), order.getId());
+                })
+                .verifyComplete();
+        verify(cartItemRepository, times(1)).deleteAll(List.of(testCartItem));
         verify(orderRepository, times(1)).save(any());
-        verify(orderItemRepository, times(1)).saveAll(any());
+        verify(orderItemRepository, times(1)).saveAll((Iterable<OrderItemEntity>) any());
     }
 
     @Test
     void getOrders_success() {
-        doReturn(List.of(testOrder)).when(orderRepository).findAll();
+        when(orderRepository.findAll()).thenReturn(Flux.just(testOrder));
+        when(orderItemRepository.findAll()).thenReturn(Flux.just(testOrderItem));
 
-        List<OrderDto> orders = orderService.getOrders();
-        assertEquals(1, orders.size());
-        assertEquals(testOrder.getId(), orders.get(0).getId());
+        StepVerifier.create(orderService.getOrders())
+                .assertNext(orders -> {
+                    assertEquals(1, orders.size());
+                    assertEquals(testOrder.getId(), orders.get(0).getId());
+                })
+                .verifyComplete();
         verify(orderRepository, times(1)).findAll();
+        verify(orderItemRepository, times(1)).findAll();
     }
 
     @Test
     void getOrder_success() {
-        doReturn(Optional.of(testOrder)).when(orderRepository).findById(ORDER_ID);
+        when(orderRepository.findById(ORDER_ID)).thenReturn(Mono.just(testOrder));
+        when(orderItemRepository.findByOrderId(ORDER_ID)).thenReturn(Flux.just(testOrderItem));
 
-        OrderDto order = orderService.getOrder(ORDER_ID);
-        assertEquals(testOrder.getId(), order.getId());
-        assertEquals(testOrder.getOrderItems().size(), order.getOrderItems().size());
+        StepVerifier.create(orderService.getOrder(ORDER_ID))
+                .assertNext(order -> {
+                    assertEquals(testOrder.getId(), order.getId());
+                })
+                .verifyComplete();
         verify(orderRepository, times(1)).findById(ORDER_ID);
     }
 
     @Test
     void getOrder_throwException() {
-        doReturn(Optional.empty()).when(orderRepository).findById(ORDER_ID);
-        assertThrows(IllegalArgumentException.class, () -> orderService.getOrder(ORDER_ID));
+        when(orderRepository.findById(ORDER_ID)).thenReturn(Mono.empty());
+        when(orderItemRepository.findByOrderId(ORDER_ID)).thenReturn(Flux.empty());
+
+        StepVerifier.create(orderService.getOrder(ORDER_ID))
+                .verifyError(IllegalArgumentException.class);
     }
 }

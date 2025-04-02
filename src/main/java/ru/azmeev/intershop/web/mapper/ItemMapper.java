@@ -5,6 +5,8 @@ import ru.azmeev.intershop.model.entity.CartItemEntity;
 import ru.azmeev.intershop.model.entity.ItemEntity;
 import ru.azmeev.intershop.web.dto.ItemDto;
 
+import java.util.List;
+
 @Component
 public class ItemMapper {
     public ItemDto toItemDto(ItemEntity item, CartItemEntity cartItem) {
@@ -16,5 +18,16 @@ public class ItemMapper {
                 .price(item.getPrice())
                 .count(cartItem != null ? cartItem.getCount() : 0)
                 .build();
+    }
+
+    public List<ItemDto> toItemDto(List<ItemEntity> items, List<CartItemEntity> cartItems) {
+        return items.stream()
+                .map(item -> {
+                    CartItemEntity cartItem = cartItems.stream()
+                            .filter(x -> x.getItemId().equals(item.getId()))
+                            .findFirst()
+                            .orElse(null);
+                    return toItemDto(item, cartItem);
+                }).toList();
     }
 }

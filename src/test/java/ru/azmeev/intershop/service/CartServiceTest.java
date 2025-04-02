@@ -1,23 +1,29 @@
 package ru.azmeev.intershop.service;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import ru.azmeev.intershop.model.entity.CartItemEntity;
 import ru.azmeev.intershop.model.entity.ItemEntity;
 import ru.azmeev.intershop.model.enums.ActionType;
 import ru.azmeev.intershop.repository.CartItemRepository;
 import ru.azmeev.intershop.repository.ItemRepository;
 import ru.azmeev.intershop.service.impl.CartServiceImpl;
-import ru.azmeev.intershop.web.dto.CartDto;
+import ru.azmeev.intershop.web.mapper.ItemMapper;
 
 import java.util.List;
-import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,8 +32,11 @@ class CartServiceTest {
     private CartItemRepository cartItemRepository;
     @Mock
     private ItemRepository itemRepository;
+    @Spy
+    private ItemMapper itemMapper;
     @InjectMocks
     private CartServiceImpl cartService;
+
     private static final Long CART_ITEM_ID = 1L;
     private static final Long ITEM_ID = 1L;
     private ItemEntity testItem;
@@ -43,51 +52,83 @@ class CartServiceTest {
         testCartItem = new CartItemEntity();
         testCartItem.setId(CART_ITEM_ID);
         testCartItem.setCount(2L);
-        testCartItem.setItem(testItem);
+        testCartItem.setItemId(ITEM_ID);
+    }
+
+    @AfterAll
+    static void resetMocks() {
+        Mockito.reset();
     }
 
     @Test
     void getCart_success() {
-        doReturn(List.of(testCartItem)).when(cartItemRepository).getCartItems();
-        CartDto cart = cartService.getCart();
-        assertEquals(1, cart.getCartItems().size());
-        assertEquals(200.0, cart.getTotal());
-        assertFalse(cart.isEmpty());
+        when(cartItemRepository.getCartItems()).thenReturn(Flux.just(testCartItem));
+        when(itemRepository.findByIds(List.of(ITEM_ID))).thenReturn(Flux.just(testItem));
+        StepVerifier.create(cartService.getCart())
+                .assertNext(cart -> {
+                    assertNotNull(cart);
+                    assertEquals(1, cart.getCartItems().size());
+                    assertEquals(200.0, cart.getTotal());
+                })
+                .verifyComplete();
+        verify(cartItemRepository, times(1)).getCartItems();
+    }
+
+    @Test
+    void getEmptyCart_success() {
+        when(cartItemRepository.getCartItems()).thenReturn(Flux.empty());
+        StepVerifier.create(cartService.getCart())
+                .assertNext(cart -> {
+                    assertNotNull(cart);
+                    assertEquals(0, cart.getCartItems().size());
+                    assertEquals(0, cart.getTotal());
+                })
+                .verifyComplete();
         verify(cartItemRepository, times(1)).getCartItems();
     }
 
     @Test
     void plusCartItemCount_success() {
-        doReturn(Optional.of(testItem)).when(itemRepository).findById(ITEM_ID);
-        doReturn(Optional.empty()).when(cartItemRepository).findByItem(CART_ITEM_ID);
-
-        cartService.updateCartItemCount(ITEM_ID, ActionType.PLUS);
+        when(itemRepository.findById(ITEM_ID)).thenReturn(Mono.just(testItem));
+        when(cartItemRepository.findByItem(ITEM_ID)).thenReturn(Mono.empty());
+        when(cartItemRepository.save(any())).thenReturn(Mono.empty());
+        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.PLUS))
+                .verifyComplete();
         verify(cartItemRepository, times(1)).save(any());
     }
 
     @Test
     void minusCartItemCount_success() {
-        doReturn(Optional.of(testItem)).when(itemRepository).findById(ITEM_ID);
-        doReturn(Optional.of(testCartItem)).when(cartItemRepository).findByItem(CART_ITEM_ID);
+        when(itemRepository.findById(ITEM_ID)).thenReturn(Mono.just(testItem));
+        when(cartItemRepository.findByItem(ITEM_ID)).thenReturn(Mono.just(testCartItem));
+        when(cartItemRepository.save(any())).thenReturn(Mono.empty());
+        when(cartItemRepository.delete(any())).thenReturn(Mono.empty());
 
-        cartService.updateCartItemCount(ITEM_ID, ActionType.MINUS);
+        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.MINUS))
+                .verifyComplete();
         verify(cartItemRepository, times(1)).save(any());
-        cartService.updateCartItemCount(ITEM_ID, ActionType.MINUS);
+        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.MINUS))
+                .verifyComplete();
         verify(cartItemRepository, times(1)).delete(any());
     }
 
     @Test
     void deleteCartItemCount_success() {
-        doReturn(Optional.of(testItem)).when(itemRepository).findById(ITEM_ID);
-        doReturn(Optional.of(testCartItem)).when(cartItemRepository).findByItem(CART_ITEM_ID);
+        when(itemRepository.findById(ITEM_ID)).thenReturn(Mono.just(testItem));
+        when(cartItemRepository.findByItem(ITEM_ID)).thenReturn(Mono.just(testCartItem));
+        when(cartItemRepository.delete(any())).thenReturn(Mono.empty());
 
-        cartService.updateCartItemCount(ITEM_ID, ActionType.DELETE);
+        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.DELETE))
+                .verifyComplete();
         verify(cartItemRepository, times(1)).delete(any());
     }
 
     @Test
     void plusCartItemCount_throwException() {
-        doThrow(IllegalArgumentException.class).when(itemRepository).findById(ITEM_ID);
-        assertThrows(IllegalArgumentException.class, () -> cartService.updateCartItemCount(ITEM_ID, ActionType.PLUS));
+        when(itemRepository.findById(ITEM_ID)).thenReturn(Mono.empty());
+        when(cartItemRepository.findByItem(ITEM_ID)).thenReturn(Mono.just(testCartItem));
+
+        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.PLUS))
+                .verifyError(IllegalArgumentException.class);
     }
 }

@@ -9,6 +9,7 @@ import lombok.Setter;
 @Builder
 public class OrderItemDto {
     private Long id;
+    private Long itemId;
     private String title;
     private String description;
     private String imgPath;

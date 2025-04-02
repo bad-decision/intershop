@@ -2,6 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
+    <meta charset="utf-8" />
     <title>Корзина товаров</title>
     <link rel="stylesheet" th:href="@{|/css/bootstrap.min.css|}" crossorigin="anonymous">
 </head>
@@ -28,14 +29,14 @@
             <table>
                 <tr>
                     <td colspan="2">
-                        <img width="300" height="300" th:src="${'/images/'+cartItem.getItem().getImgPath()}">
+                        <img width="300" height="300" th:src="${'/images/'+cartItem.getImgPath()}">
                     </td>
                     <td>
                         <div>
-                            <p><b th:text="${cartItem.getItem().getTitle()}"></b></p>
-                            <p><b th:text="${cartItem.getItem().getPrice()}+' руб.'"></b></p>
-                            <p><span th:text="${cartItem.getItem().getDescription()}"></span></p>
-                            <form th:action="${'/cart/items/'+cartItem.getItem().getId()}" method="post" style="margin-top: 15px;">
+                            <p><b th:text="${cartItem.getTitle()}"></b></p>
+                            <p><b th:text="${cartItem.getPrice()}+' руб.'"></b></p>
+                            <p><span th:text="${cartItem.getDescription()}"></span></p>
+                            <form th:action="${'/cart/items/'+cartItem.getId()}" method="post" style="margin-top: 15px;">
                                 <button name="action" value="MINUS" class="btn btn-primary">-</button>
                                 <span th:text="${cartItem.getCount()}" style="margin: 5px"></span>
                                 <button name="action" value="PLUS" class="btn btn-primary">+</button>

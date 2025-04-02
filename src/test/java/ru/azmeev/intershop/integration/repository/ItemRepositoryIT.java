@@ -1,14 +1,16 @@
 package ru.azmeev.intershop.integration.repository;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import ru.azmeev.intershop.integration.IntegrationTestBase;
 import ru.azmeev.intershop.model.entity.ItemEntity;
 import ru.azmeev.intershop.repository.ItemRepository;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -18,15 +20,32 @@ class ItemRepositoryIT extends IntegrationTestBase {
     private ItemRepository itemRepository;
     private final Pageable pageable = PageRequest.of(0, 5, Sort.unsorted());
 
-    @Test
-    void filterItems_mustReturnCorrectPage() {
-        Page<ItemEntity> page = itemRepository.filterItems("ITEM1", pageable);
-        assertEquals(2L, page.getTotalElements());
+    @BeforeEach
+    public void setUp() {
+        executeSqlBlocking(initDataSql);
     }
 
     @Test
-    void filterItems_mustReturnEmptyPage() {
-        Page<ItemEntity> page = itemRepository.filterItems("NOT_EXIST_ITEM", pageable);
-        assertEquals(0L, page.getTotalElements());
+    void filterItems_mustReturnCorrectList() {
+        List<ItemEntity> data = itemRepository.filterItems("itEM1", pageable).collectList().block();
+        assertEquals(2L, data.size());
+    }
+
+    @Test
+    void countFilteredItems_mustReturnCorrectValue() {
+        Long count = itemRepository.countFilteredItems("itEM1").block();
+        assertEquals(2L, count);
+    }
+
+    @Test
+    void filterItems_mustReturnEmptyList() {
+        List<ItemEntity> data = itemRepository.filterItems("NOT_EXIST_ITEM", pageable).collectList().block();
+        assertEquals(0L, data.size());
+    }
+
+    @Test
+    void findByIds_mustReturnList() {
+        List<ItemEntity> data = itemRepository.findByIds(List.of(1L, 2L)).collectList().block();
+        assertEquals(2L, data.size());
     }
 }

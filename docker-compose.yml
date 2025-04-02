@@ -8,6 +8,7 @@ services:
     container_name: shop-web
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:35432/shop
+      R2DBC_DATASOURCE_URL: r2dbc:postgresql://host.docker.internal:35432/shop
     ports:
       - "${SHOP_PORT:-8080}:8080"
     depends_on:

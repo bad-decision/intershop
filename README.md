@@ -3,8 +3,8 @@
 
 Используемые технологии:
 - Spring Boot Framework
-- Spring Data JPA
-- Spring WebMVC
+- Spring Data R2DBC
+- Spring WebFlux
 - Thymeleaf
 - Lombok
 - PostgreSQL

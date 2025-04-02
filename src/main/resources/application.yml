@@ -1,16 +1,14 @@
 spring:
   application:
     name: intershop
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/shop}
-    driver-class-name: org.postgresql.Driver
+  r2dbc:
+    url: ${R2DBC_DATASOURCE_URL:r2dbc:postgresql://localhost:5432/shop}
     username: ${DATASOURCE_USER:shop}
     password: ${DATASOURCE_PASSWORD:shop}
-  jpa:
-    database: postgresql
-    hibernate:
-      ddl-auto: validate
-    show-sql: true
+  liquibase:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/shop}
+    user: ${DATASOURCE_USER:shop}
+    password: ${DATASOURCE_PASSWORD:shop}
   sql:
     init:
       mode: always
@@ -22,4 +20,3 @@ server:
 shop:
   defaultPageSize: 5
   defaultPageNumber: 1
-

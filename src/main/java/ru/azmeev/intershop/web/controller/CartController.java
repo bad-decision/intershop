@@ -4,8 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 import ru.azmeev.intershop.model.enums.ActionType;
-import ru.azmeev.intershop.web.dto.CartDto;
 import ru.azmeev.intershop.service.CartService;
 
 @Controller
@@ -16,16 +17,20 @@ public class CartController {
     private final CartService cartService;
 
     @GetMapping
-    public String getCart(Model model) {
-        CartDto cart = cartService.getCart();
-        model.addAttribute("cart", cart);
-        return "cart";
+    public Mono<String> getCart(Model model) {
+        return cartService.getCart()
+                .doOnNext(cart -> model.addAttribute("cart", cart))
+                .then(Mono.just("cart"));
     }
 
     @PostMapping("/items/{id}")
-    public String updateCartItemCount(@RequestParam ActionType action,
-                                      @PathVariable Long id) {
-        cartService.updateCartItemCount(id, action);
-        return "redirect:/cart";
+    public Mono<String> updateCartItemCount(ServerWebExchange exchange,
+                                            @PathVariable Long id) {
+        return exchange.getFormData()
+                .flatMap(formData -> {
+                    String action = formData.getFirst("action");
+                    return cartService.updateCartItemCount(id, ActionType.valueOf(action))
+                            .then(Mono.just("redirect:/cart"));
+                });
     }
 }

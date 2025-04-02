@@ -1,5 +1,6 @@
 package ru.azmeev.intershop.service;
 
+import reactor.core.publisher.Mono;
 import ru.azmeev.intershop.model.entity.OrderEntity;
 import ru.azmeev.intershop.web.dto.OrderDto;
 
@@ -7,9 +8,9 @@ import java.util.List;
 
 public interface OrderService {
 
-    OrderEntity createOrder();
+    Mono<OrderEntity> createOrder();
 
-    List<OrderDto> getOrders();
+    Mono<List<OrderDto>> getOrders();
 
-    OrderDto getOrder(Long id);
+    Mono<OrderDto> getOrder(Long id);
 }

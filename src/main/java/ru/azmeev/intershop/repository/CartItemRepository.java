@@ -1,22 +1,23 @@
 package ru.azmeev.intershop.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.azmeev.intershop.model.entity.CartItemEntity;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
-public interface CartItemRepository extends JpaRepository<CartItemEntity, Long> {
+public interface CartItemRepository extends ReactiveCrudRepository<CartItemEntity, Long> {
 
-    @Query("SELECT i FROM shop_CartItem i JOIN FETCH i.item WHERE i.item is not null ORDER BY i.createdDate desc")
-    List<CartItemEntity> getCartItems();
+    @Query("SELECT * FROM shop_cart_item i")
+    Flux<CartItemEntity> getCartItems();
 
-    @Query("SELECT i FROM shop_CartItem i JOIN FETCH i.item WHERE i.item.id = :itemId")
-    Optional<CartItemEntity> findByItem(Long itemId);
+    @Query("SELECT * FROM shop_cart_item i WHERE i.item_id = :itemId")
+    Mono<CartItemEntity> findByItem(Long itemId);
 
-    @Query("SELECT i FROM shop_CartItem i JOIN FETCH i.item WHERE i.item.id in :itemIds")
-    List<CartItemEntity> findByItems(List<Long> itemIds);
+    @Query("SELECT * FROM shop_cart_item e WHERE e.item_id in (:itemIds)")
+    Flux<CartItemEntity> findByItems(List<Long> itemIds);
 }
