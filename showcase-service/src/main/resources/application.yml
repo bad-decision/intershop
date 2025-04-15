@@ -13,7 +13,10 @@ spring:
     init:
       mode: always
       data-locations: classpath:sql/data.sql
-
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 server:
   port: 8080
 

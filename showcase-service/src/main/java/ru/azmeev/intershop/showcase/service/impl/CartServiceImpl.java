@@ -8,7 +8,7 @@ import ru.azmeev.intershop.showcase.model.entity.CartItemEntity;
 import ru.azmeev.intershop.showcase.model.entity.ItemEntity;
 import ru.azmeev.intershop.showcase.model.enums.ActionType;
 import ru.azmeev.intershop.showcase.repository.CartItemRepository;
-import ru.azmeev.intershop.showcase.repository.ItemRepository;
+import ru.azmeev.intershop.showcase.service.CacheItemService;
 import ru.azmeev.intershop.showcase.service.CartService;
 import ru.azmeev.intershop.showcase.web.dto.CartDto;
 import ru.azmeev.intershop.showcase.web.dto.ItemDto;
@@ -24,7 +24,7 @@ import java.util.Optional;
 public class CartServiceImpl implements CartService {
 
     private final CartItemRepository cartItemRepository;
-    private final ItemRepository itemRepository;
+    private final CacheItemService cacheItemService;
     private final ItemMapper itemMapper;
 
     @Override
@@ -41,8 +41,7 @@ public class CartServiceImpl implements CartService {
                                 .build());
                     }
 
-                    return itemRepository.findByIds(itemIds)
-                            .collectList()
+                    return cacheItemService.findByIds(itemIds)
                             .map(items -> {
                                 List<ItemDto> itemDtos = itemMapper.toItemDto(items, cartItems);
                                 Double total = itemDtos.stream()
@@ -60,12 +59,11 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public Mono<Void> updateCartItemCount(Long itemId, ActionType action) {
-        Mono<ItemEntity> itemMono = itemRepository.findById(itemId)
+        Mono<ItemEntity> itemMono = cacheItemService.findById(itemId)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException(String.format("Item with id %s not found", itemId))));
         Mono<Optional<CartItemEntity>> cartItemMono = cartItemRepository.findByItem(itemId)
                 .map(Optional::of)
                 .defaultIfEmpty(Optional.empty());
-
         return Mono.zip(itemMono, cartItemMono)
                 .flatMap(tuple -> {
                     CartItemEntity cartItem = tuple.getT2().orElse(null);

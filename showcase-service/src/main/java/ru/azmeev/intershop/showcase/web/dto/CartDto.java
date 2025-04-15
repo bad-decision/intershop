@@ -1,15 +1,17 @@
 package ru.azmeev.intershop.showcase.web.dto;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Getter
 @Setter
 @Builder
-public class CartDto {
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
+public class CartDto implements Serializable {
     private List<ItemDto> cartItems;
     private double total;
     private boolean isEmpty;
