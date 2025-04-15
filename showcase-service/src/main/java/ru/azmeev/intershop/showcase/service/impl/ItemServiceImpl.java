@@ -4,14 +4,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.azmeev.intershop.showcase.model.entity.BaseEntity;
 import ru.azmeev.intershop.showcase.model.entity.CartItemEntity;
 import ru.azmeev.intershop.showcase.model.entity.ItemEntity;
 import ru.azmeev.intershop.showcase.model.enums.SortType;
 import ru.azmeev.intershop.showcase.repository.CartItemRepository;
+import ru.azmeev.intershop.showcase.repository.ItemRepository;
 import ru.azmeev.intershop.showcase.service.CacheItemService;
 import ru.azmeev.intershop.showcase.service.ItemService;
+import ru.azmeev.intershop.showcase.web.dto.ItemAddDto;
 import ru.azmeev.intershop.showcase.web.dto.ItemDto;
 import ru.azmeev.intershop.showcase.web.dto.ItemFilterDto;
 import ru.azmeev.intershop.showcase.web.mapper.ItemMapper;
@@ -25,8 +28,16 @@ import java.util.List;
 public class ItemServiceImpl implements ItemService {
 
     private final CacheItemService cacheItemService;
+    private final ItemRepository itemRepository;
     private final CartItemRepository cartItemRepository;
     private final ItemMapper itemMapper;
+
+    @Override
+    @Transactional
+    public Flux<ItemDto> addItems(List<ItemAddDto> items) {
+        return itemRepository.saveAll(itemMapper.toItemEntity(items))
+                .map(itemEntity -> itemMapper.toItemDto(itemEntity, null));
+    }
 
     @Override
     public Mono<ItemDto> getItem(Long itemId) {
@@ -71,9 +82,9 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private Page<ItemDto> mapToPage(List<CartItemEntity> cartItems,
-                                          Pageable pageable,
-                                          List<ItemEntity> content,
-                                          Long total) {
+                                    Pageable pageable,
+                                    List<ItemEntity> content,
+                                    Long total) {
         List<ItemDto> itemDtoList = content.stream()
                 .map(item -> {
                     CartItemEntity cartItem = cartItems.stream()

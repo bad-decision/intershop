@@ -5,14 +5,18 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.azmeev.intershop.showcase.model.enums.ActionType;
 import ru.azmeev.intershop.showcase.model.enums.SortType;
 import ru.azmeev.intershop.showcase.service.CartService;
 import ru.azmeev.intershop.showcase.service.ItemService;
+import ru.azmeev.intershop.showcase.web.dto.ItemAddDto;
+import ru.azmeev.intershop.showcase.web.dto.ItemDto;
 import ru.azmeev.intershop.showcase.web.dto.ItemFilterDto;
 import ru.azmeev.intershop.showcase.web.dto.PagingDto;
 
+import java.util.List;
 import java.util.Optional;
 
 @Controller
@@ -91,5 +95,11 @@ public class ItemController {
                     return cartService.updateCartItemCount(id, ActionType.valueOf(action))
                             .then(Mono.just("redirect:/main/items"));
                 });
+    }
+
+    @PostMapping(value = "/items/add")
+    @ResponseBody
+    public Flux<ItemDto> addItems(@RequestBody List<ItemAddDto> items) {
+        return itemService.addItems(items);
     }
 }

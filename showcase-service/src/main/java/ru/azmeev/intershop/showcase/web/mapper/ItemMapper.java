@@ -3,6 +3,7 @@ package ru.azmeev.intershop.showcase.web.mapper;
 import org.springframework.stereotype.Component;
 import ru.azmeev.intershop.showcase.model.entity.CartItemEntity;
 import ru.azmeev.intershop.showcase.model.entity.ItemEntity;
+import ru.azmeev.intershop.showcase.web.dto.ItemAddDto;
 import ru.azmeev.intershop.showcase.web.dto.ItemDto;
 
 import java.util.List;
@@ -29,5 +30,20 @@ public class ItemMapper {
                             .orElse(null);
                     return toItemDto(item, cartItem);
                 }).toList();
+    }
+
+    public List<ItemEntity> toItemEntity(List<ItemAddDto> items) {
+        return items.stream()
+                .map(this::toItemEntity)
+                .toList();
+    }
+
+    public ItemEntity toItemEntity(ItemAddDto item) {
+        ItemEntity entity = new ItemEntity();
+        entity.setDescription(item.getDescription());
+        entity.setPrice(item.getPrice());
+        entity.setTitle(item.getTitle());
+        entity.setImgPath(item.getImgPath());
+        return entity;
     }
 }
