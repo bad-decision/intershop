@@ -1,7 +1,9 @@
 package ru.azmeev.intershop.payment.web.controller.impl;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import ru.azmeev.intershop.payment.service.PaymentService;
@@ -14,6 +16,7 @@ import ru.azmeev.intershop.payment.web.dto.PaymentResponse;
 @RequestMapping("/api/payment")
 @Tag(name = "PaymentController", description = "All payment operations")
 @RequiredArgsConstructor
+@Validated
 public class PaymentController implements PaymentApi {
 
     private final PaymentService paymentService;
@@ -24,7 +27,7 @@ public class PaymentController implements PaymentApi {
     }
 
     @PostMapping("/process")
-    public Mono<PaymentResponse> processPayment(@RequestBody PaymentRequest request) {
+    public Mono<PaymentResponse> processPayment(@Valid @RequestBody PaymentRequest request) {
         return paymentService.processPayment(request);
     }
 }

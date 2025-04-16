@@ -1,21 +1,25 @@
 package ru.azmeev.intershop.payment.service.impl;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import ru.azmeev.intershop.payment.exception.InsufficientFundsException;
+import ru.azmeev.intershop.payment.repository.AccountRepository;
 import ru.azmeev.intershop.payment.service.PaymentService;
 import ru.azmeev.intershop.payment.web.dto.BalanceResponse;
 import ru.azmeev.intershop.payment.web.dto.PaymentRequest;
 import ru.azmeev.intershop.payment.web.dto.PaymentResponse;
 
-import java.math.BigDecimal;
-
 @Service
+@RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
+
+    private final AccountRepository accountRepository;
+
     @Override
     public Mono<BalanceResponse> getBalance() {
         return Mono.just(new BalanceResponse()
-                .balance(BigDecimal.valueOf(Math.random() * 1000)));
+                .balance(accountRepository.getBalance()));
     }
 
     @Override
