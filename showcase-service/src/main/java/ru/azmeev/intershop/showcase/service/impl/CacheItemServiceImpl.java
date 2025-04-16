@@ -1,6 +1,7 @@
 package ru.azmeev.intershop.showcase.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -38,5 +39,11 @@ public class CacheItemServiceImpl implements CacheItemService {
         Flux<ItemEntity> items = itemRepository.filterItems(search, pageable);
         Mono<Long> totalCount = itemRepository.countFilteredItems(search);
         return Mono.zip(items.collectList(), totalCount, (content, total) -> new PageImpl<>(content, pageable, total));
+    }
+
+    @Override
+    @CacheEvict(cacheNames = {ITEMS_PAGE_CACHE, ITEMS_LIST_CACHE}, allEntries = true)
+    public Mono<Boolean> evictItemsListCache() {
+        return Mono.just(true);
     }
 }

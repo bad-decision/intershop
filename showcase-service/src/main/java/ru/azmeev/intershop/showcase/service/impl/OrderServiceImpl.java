@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import ru.azmeev.intershop.showcase.model.entity.CartItemEntity;
+import ru.azmeev.intershop.showcase.model.entity.ItemEntity;
 import ru.azmeev.intershop.showcase.model.entity.OrderEntity;
 import ru.azmeev.intershop.showcase.model.entity.OrderItemEntity;
 import ru.azmeev.intershop.showcase.repository.CartItemRepository;
@@ -12,11 +13,13 @@ import ru.azmeev.intershop.showcase.repository.ItemRepository;
 import ru.azmeev.intershop.showcase.repository.OrderItemRepository;
 import ru.azmeev.intershop.showcase.repository.OrderRepository;
 import ru.azmeev.intershop.showcase.service.OrderService;
+import ru.azmeev.intershop.showcase.service.PaymentService;
 import ru.azmeev.intershop.showcase.web.dto.OrderDto;
 import ru.azmeev.intershop.showcase.web.mapper.OrderItemMapper;
 import ru.azmeev.intershop.showcase.web.mapper.OrderMapper;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +32,7 @@ public class OrderServiceImpl implements OrderService {
     private final ItemRepository itemRepository;
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
+    private final PaymentService paymentService;
 
     @Override
     @Transactional
@@ -40,15 +44,23 @@ public class OrderServiceImpl implements OrderService {
                     return itemRepository.findByIds(itemIds)
                             .collectList()
                             .flatMap(items -> {
-                                OrderEntity order = new OrderEntity();
-                                return orderRepository.save(order)
-                                        .flatMap(savedOrder -> {
-                                            order.setId(savedOrder.getId());
-                                            List<OrderItemEntity> orderItems = orderItemMapper.toOrderItemEntities(items, cartItems, savedOrder.getId());
-                                            return orderItemRepository.saveAll(orderItems).collectList();
-                                        })
-                                        .then(cartItemRepository.deleteAll(cartItems))
-                                        .thenReturn(order);
+                                double cartTotal = getCartTotal(cartItems, items);
+                                return paymentService.process(cartTotal)
+                                        .flatMap(paymentResponse -> {
+                                            if (Boolean.TRUE.equals(paymentResponse.getSuccess())) {
+                                                OrderEntity order = new OrderEntity();
+                                                return orderRepository.save(order)
+                                                        .flatMap(savedOrder -> {
+                                                            order.setId(savedOrder.getId());
+                                                            List<OrderItemEntity> orderItems = orderItemMapper.toOrderItemEntities(items, cartItems, savedOrder.getId());
+                                                            return orderItemRepository.saveAll(orderItems).collectList();
+                                                        })
+                                                        .then(cartItemRepository.deleteAll(cartItems))
+                                                        .thenReturn(order);
+                                            } else {
+                                                return Mono.error(new IllegalArgumentException(paymentResponse.getMessage()));
+                                            }
+                                        });
                             });
                 });
     }
@@ -71,5 +83,16 @@ public class OrderServiceImpl implements OrderService {
                 .switchIfEmpty(Mono.error(new IllegalArgumentException(String.format("Item with id %s not found", id))));
         Mono<List<OrderItemEntity>> orderItemsMono = orderItemRepository.findByOrderId(id).collectList();
         return Mono.zip(orderMono, orderItemsMono, orderMapper::toOrderDto);
+    }
+
+    private double getCartTotal(List<CartItemEntity> cartItems, List<ItemEntity> items) {
+        AtomicReference<Double> total = new AtomicReference<>(0.0);
+        cartItems.forEach(cartItem -> {
+            items.stream()
+                    .filter(it -> it.getId().equals(cartItem.getItemId()))
+                    .findFirst()
+                    .ifPresent(item -> total.updateAndGet(v -> v + item.getPrice() * cartItem.getCount()));
+        });
+        return total.get();
     }
 }

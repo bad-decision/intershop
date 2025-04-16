@@ -36,8 +36,12 @@ public class OrderController {
     }
 
     @PostMapping("/buy")
-    public Mono<String> createOrder() {
+    public Mono<String> createOrder(Model model) {
         return orderService.createOrder()
-                .flatMap(order -> Mono.just(String.format("redirect:/orders/%s?newOrder=true", order.getId())));
+                .flatMap(order -> Mono.just(String.format("redirect:/orders/%s?newOrder=true", order.getId())))
+                .onErrorResume(exc -> {
+                    model.addAttribute("message", exc.getMessage());
+                    return Mono.just("orderError");
+                });
     }
 }

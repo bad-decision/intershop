@@ -15,4 +15,5 @@ public class CartDto implements Serializable {
     private List<ItemDto> cartItems;
     private double total;
     private boolean isEmpty;
+    private boolean isPaymentEnable;
 }

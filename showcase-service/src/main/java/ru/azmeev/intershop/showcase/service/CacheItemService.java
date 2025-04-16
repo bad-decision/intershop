@@ -18,4 +18,6 @@ public interface CacheItemService {
     Mono<Page<ItemEntity>> searchItems(String search, Pageable pageable);
 
     Mono<List<ItemEntity>> findByIds(List<Long> itemIds);
+
+    Mono<Boolean> evictItemsListCache();
 }

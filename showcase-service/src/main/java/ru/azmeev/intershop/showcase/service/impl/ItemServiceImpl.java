@@ -35,8 +35,10 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public Flux<ItemDto> addItems(List<ItemAddDto> items) {
-        return itemRepository.saveAll(itemMapper.toItemEntity(items))
-                .map(itemEntity -> itemMapper.toItemDto(itemEntity, null));
+        return cacheItemService.evictItemsListCache()
+                .flatMapMany(r -> itemRepository.saveAll(itemMapper.toItemEntity(items))
+                        .map(itemEntity -> itemMapper.toItemDto(itemEntity, null)));
+
     }
 
     @Override

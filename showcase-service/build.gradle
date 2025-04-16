@@ -3,6 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.4.4'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'checkstyle'
+    id "org.openapi.generator" version "7.12.0"
 }
 
 group = 'ru.azmeev.intershop'
@@ -22,6 +23,21 @@ configurations {
 
 repositories {
     mavenCentral()
+}
+
+openApiGenerate {
+    generatorName.set("java")
+    inputSpec.set("$projectDir/src/main/resources/api-spec.yaml")
+    outputDir.set("$projectDir/build/generated")
+    modelPackage.set("ru.azmeev.intershop.showcase.model")
+    apiPackage.set("ru.azmeev.intershop.showcase.api")
+    configOptions.set([
+            useJakartaEe: "true",
+            library: "webclient",
+            useSpringBoot3: "true",
+            openApiNullable: "false",
+            useBeanValidation: "true"
+    ])
 }
 
 dependencies {

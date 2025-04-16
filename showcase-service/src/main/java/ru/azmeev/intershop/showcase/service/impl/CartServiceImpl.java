@@ -10,10 +10,12 @@ import ru.azmeev.intershop.showcase.model.enums.ActionType;
 import ru.azmeev.intershop.showcase.repository.CartItemRepository;
 import ru.azmeev.intershop.showcase.service.CacheItemService;
 import ru.azmeev.intershop.showcase.service.CartService;
+import ru.azmeev.intershop.showcase.service.PaymentService;
 import ru.azmeev.intershop.showcase.web.dto.CartDto;
 import ru.azmeev.intershop.showcase.web.dto.ItemDto;
 import ru.azmeev.intershop.showcase.web.mapper.ItemMapper;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +27,7 @@ public class CartServiceImpl implements CartService {
 
     private final CartItemRepository cartItemRepository;
     private final CacheItemService cacheItemService;
+    private final PaymentService paymentService;
     private final ItemMapper itemMapper;
 
     @Override
@@ -42,16 +45,25 @@ public class CartServiceImpl implements CartService {
                     }
 
                     return cacheItemService.findByIds(itemIds)
-                            .map(items -> {
+                            .flatMap(items -> {
                                 List<ItemDto> itemDtos = itemMapper.toItemDto(items, cartItems);
-                                Double total = itemDtos.stream()
+                                double cartTotal = itemDtos.stream()
                                         .map(item -> item.getCount() * item.getPrice())
                                         .reduce(0.0, Double::sum);
-                                return CartDto.builder()
+                                CartDto cartDto = CartDto.builder()
                                         .cartItems(itemDtos)
                                         .isEmpty(cartItems.isEmpty())
-                                        .total(total)
+                                        .total(cartTotal)
                                         .build();
+
+                                return paymentService.getBalance()
+                                        .map(balanceResponse -> {
+                                            boolean isPaymentEnable = balanceResponse.getBalance() != null &&
+                                                    balanceResponse.getBalance().compareTo(BigDecimal.valueOf(cartTotal)) >= 0;
+                                            cartDto.setPaymentEnable(isPaymentEnable);
+                                            return cartDto;
+                                        })
+                                        .onErrorReturn(cartDto);
                             });
                 });
     }

@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import ru.azmeev.intershop.showcase.service.CacheItemService;
-import ru.azmeev.intershop.showcase.service.CartService;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -27,11 +26,6 @@ public class RedisConfiguration {
                 .withCacheConfiguration(
                         CacheItemService.ITEMS_PAGE_CACHE,
                         RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.of(2, ChronoUnit.MINUTES)))
-                .withCacheConfiguration(
-                        CartService.CART_CACHE_NAME,
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.of(1, ChronoUnit.MINUTES))
-                );
+                                .entryTtl(Duration.of(2, ChronoUnit.MINUTES)));
     }
 }

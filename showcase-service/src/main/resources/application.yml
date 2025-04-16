@@ -1,6 +1,6 @@
 spring:
   application:
-    name: intershop
+    name: showcase-service
   r2dbc:
     url: ${R2DBC_DATASOURCE_URL:r2dbc:postgresql://localhost:5432/shop}
     username: ${DATASOURCE_USER:shop}
@@ -23,3 +23,4 @@ server:
 shop:
   defaultPageSize: 5
   defaultPageNumber: 1
+  paymentUrl: ${PAYMENT_URL:http://localhost:8081}
