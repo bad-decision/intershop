@@ -1,0 +1,113 @@
+openapi: 3.0.3
+info:
+  title: Payment Service API
+  description: Reactive RESTful API for payment operations
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081/api
+    description: Payment service
+tags:
+  - name: PaymentController
+    description: All payment operations
+paths:
+  /payment/balance:
+    get:
+      tags:
+        - PaymentController
+      summary: Get current account balance
+      description: Returns the current balance of the user's account
+      operationId: getBalance
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /payment/process:
+    post:
+      tags:
+        - PaymentController
+      summary: Process payment
+      description: Deducts the order amount from the account balance
+      operationId: processPayment
+      requestBody:
+        description: Payment request object
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '200':
+          description: Payment processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          description: Insufficient funds or invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    BalanceResponse:
+      type: object
+      properties:
+        balance:
+          type: number
+          format: BigDecimal
+          description: Current account balance
+          example: 1500.50
+    PaymentRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        amount:
+          type: number
+          format: BigDecimal
+          minimum: 0.01
+          description: Order amount to deduct from balance
+          example: 99.99
+    PaymentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Payment status
+          example: true
+        remainingBalance:
+          type: number
+          format: BigDecimal
+          description: Remaining balance after payment
+          example: 1400.51
+        message:
+          type: string
+          description: Additional information
+          example: Payment processed successfully
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: Insufficient funds
+        details:
+          type: string
+          description: Additional error details
+          example: Current balance is 50.00, but required 99.99
