@@ -1,15 +1,15 @@
 FROM gradle:8.12.1-jdk21-corretto as builder
 
-WORKDIR /shop
+WORKDIR /showcase
 
 COPY . ./
 
 RUN gradle clean bootJar -x test
 
-FROM openjdk:21-slim
+FROM openjdk:21
 
-WORKDIR /shop
+WORKDIR /showcase
 
-COPY --from=builder /shop/build/libs/intershop-1.0-SNAPSHOT.jar /shop/shop.jar
+COPY --from=builder /showcase/build/libs/showcase-1.0-SNAPSHOT.jar /showcase/showcase.jar
 
-ENTRYPOINT ["java", "-jar", "/shop/shop.jar"]
+ENTRYPOINT ["java", "-jar", "/showcase/showcase.jar"]

@@ -1,25 +1,49 @@
 version: '3.3'
 
 services:
-  shop-web:
+  showcase-service:
     restart: always
     build:
-      dockerfile: ./Dockerfile
-    container_name: shop-web
+      context: ./showcase-service
+      dockerfile: Dockerfile
+    container_name: showcase-service
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:35432/shop
       R2DBC_DATASOURCE_URL: r2dbc:postgresql://host.docker.internal:35432/shop
+      REDIS_HOST: showcase-redis
+      PAYMENT_URL: http://payment-service:8081
     ports:
-      - "${SHOP_PORT:-8080}:8080"
+      - "${SERVER_PORT:-8080}:8080"
     depends_on:
-      - shop-postgres
+      - showcase-postgres
+      - showcase-redis
     networks:
       - shop
 
-  shop-postgres:
+  payment-service:
+    restart: always
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: payment-service
+    ports:
+      - "${SERVER_PORT:-8081}:8081"
+    networks:
+      - shop
+
+  showcase-redis:
+    restart: always
+    image: redis:7.4.2
+    container_name: showcase-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - shop
+
+  showcase-postgres:
     restart: always
     image: postgres:16.1
-    container_name: shop-postgres
+    container_name: showcase-postgres
     environment:
       POSTGRES_USER: ${SHOP_DB_USERNAME:-shop}
       POSTGRES_PASSWORD: ${SHOP_DB_PASSWORD:-shop}
