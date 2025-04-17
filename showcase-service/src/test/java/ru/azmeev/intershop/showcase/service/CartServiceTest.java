@@ -16,10 +16,11 @@ import ru.azmeev.intershop.showcase.model.entity.CartItemEntity;
 import ru.azmeev.intershop.showcase.model.entity.ItemEntity;
 import ru.azmeev.intershop.showcase.model.enums.ActionType;
 import ru.azmeev.intershop.showcase.repository.CartItemRepository;
-import ru.azmeev.intershop.showcase.repository.ItemRepository;
 import ru.azmeev.intershop.showcase.service.impl.CartServiceImpl;
+import ru.azmeev.intershop.showcase.web.dto.payment.BalanceResponse;
 import ru.azmeev.intershop.showcase.web.mapper.ItemMapper;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,7 +32,9 @@ class CartServiceTest {
     @Mock
     private CartItemRepository cartItemRepository;
     @Mock
-    private ItemRepository itemRepository;
+    private CacheItemService cacheItemService;
+    @Mock
+    private PaymentService paymentService;
     @Spy
     private ItemMapper itemMapper;
     @InjectMocks
@@ -63,7 +66,8 @@ class CartServiceTest {
     @Test
     void getCart_success() {
         when(cartItemRepository.getCartItems()).thenReturn(Flux.just(testCartItem));
-        when(itemRepository.findByIds(List.of(ITEM_ID))).thenReturn(Flux.just(testItem));
+        when(cacheItemService.findByIds(List.of(ITEM_ID))).thenReturn(Mono.just(List.of(testItem)));
+        when(paymentService.getBalance()).thenReturn(Mono.just(new BalanceResponse().balance(BigDecimal.valueOf(1000.0))));
         StepVerifier.create(cartService.getCart())
                 .assertNext(cart -> {
                     assertNotNull(cart);
@@ -89,7 +93,7 @@ class CartServiceTest {
 
     @Test
     void plusCartItemCount_success() {
-        when(itemRepository.findById(ITEM_ID)).thenReturn(Mono.just(testItem));
+        when(cacheItemService.findById(ITEM_ID)).thenReturn(Mono.just(testItem));
         when(cartItemRepository.findByItem(ITEM_ID)).thenReturn(Mono.empty());
         when(cartItemRepository.save(any())).thenReturn(Mono.empty());
         StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.PLUS))
@@ -99,7 +103,7 @@ class CartServiceTest {
 
     @Test
     void minusCartItemCount_success() {
-        when(itemRepository.findById(ITEM_ID)).thenReturn(Mono.just(testItem));
+        when(cacheItemService.findById(ITEM_ID)).thenReturn(Mono.just(testItem));
         when(cartItemRepository.findByItem(ITEM_ID)).thenReturn(Mono.just(testCartItem));
         when(cartItemRepository.save(any())).thenReturn(Mono.empty());
         when(cartItemRepository.delete(any())).thenReturn(Mono.empty());
@@ -114,7 +118,7 @@ class CartServiceTest {
 
     @Test
     void deleteCartItemCount_success() {
-        when(itemRepository.findById(ITEM_ID)).thenReturn(Mono.just(testItem));
+        when(cacheItemService.findById(ITEM_ID)).thenReturn(Mono.just(testItem));
         when(cartItemRepository.findByItem(ITEM_ID)).thenReturn(Mono.just(testCartItem));
         when(cartItemRepository.delete(any())).thenReturn(Mono.empty());
 
@@ -125,7 +129,7 @@ class CartServiceTest {
 
     @Test
     void plusCartItemCount_throwException() {
-        when(itemRepository.findById(ITEM_ID)).thenReturn(Mono.empty());
+        when(cacheItemService.findById(ITEM_ID)).thenReturn(Mono.empty());
         when(cartItemRepository.findByItem(ITEM_ID)).thenReturn(Mono.just(testCartItem));
 
         StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.PLUS))

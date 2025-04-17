@@ -1,6 +1,9 @@
 package ru.azmeev.intershop.showcase.integration;
 
+import com.redis.testcontainers.RedisContainer;
 import io.r2dbc.spi.ConnectionFactory;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,6 +18,7 @@ import reactor.core.publisher.Mono;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Testcontainers
+@ExtendWith(MockitoExtension.class)
 public abstract class IntegrationTestBase {
 
     @Autowired
@@ -23,10 +27,13 @@ public abstract class IntegrationTestBase {
     protected Resource initDataSql;
 
     @ServiceConnection
-    private static final PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:16.1");
+    private static final PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:16.1");
+    @ServiceConnection
+    static final RedisContainer redisContainer = new RedisContainer("redis:7.4.2-bookworm");
 
     static {
-        container.start();
+        postgreSQLContainer.start();
+        redisContainer.start();
     }
 
     protected void executeSqlBlocking(final Resource sql) {

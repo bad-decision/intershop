@@ -1,14 +1,13 @@
 package ru.azmeev.intershop.showcase.web.dto;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class ItemAddDto {
     private String title;
     private String description;

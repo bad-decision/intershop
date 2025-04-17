@@ -19,9 +19,11 @@ import ru.azmeev.intershop.showcase.repository.ItemRepository;
 import ru.azmeev.intershop.showcase.repository.OrderItemRepository;
 import ru.azmeev.intershop.showcase.repository.OrderRepository;
 import ru.azmeev.intershop.showcase.service.impl.OrderServiceImpl;
+import ru.azmeev.intershop.showcase.web.dto.payment.PaymentResponse;
 import ru.azmeev.intershop.showcase.web.mapper.OrderItemMapper;
 import ru.azmeev.intershop.showcase.web.mapper.OrderMapper;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,6 +39,8 @@ class OrderServiceTest {
     private CartItemRepository cartItemRepository;
     @Mock
     private ItemRepository itemRepository;
+    @Mock
+    private PaymentService paymentService;
     @Spy
     private OrderItemMapper orderItemMapper = new OrderItemMapper();
     @Spy
@@ -82,6 +86,7 @@ class OrderServiceTest {
         when(orderRepository.save(any())).thenReturn(Mono.just(testOrder));
         when(orderItemRepository.saveAll((Iterable<OrderItemEntity>) any())).thenReturn(Flux.empty());
         when(cartItemRepository.deleteAll(List.of(testCartItem))).thenReturn(Flux.empty().then());
+        when(paymentService.process(200.0)).thenReturn(Mono.just(new PaymentResponse().success(true).remainingBalance(BigDecimal.valueOf(100.0))));
 
         StepVerifier.create(orderService.createOrder())
                 .assertNext(order -> {
@@ -91,6 +96,16 @@ class OrderServiceTest {
         verify(cartItemRepository, times(1)).deleteAll(List.of(testCartItem));
         verify(orderRepository, times(1)).save(any());
         verify(orderItemRepository, times(1)).saveAll((Iterable<OrderItemEntity>) any());
+    }
+
+    @Test
+    void createOrder_paymentError() {
+        when(cartItemRepository.getCartItems()).thenReturn(Flux.just(testCartItem));
+        when(itemRepository.findByIds(List.of(ITEM_ID))).thenReturn(Flux.just(testItem));
+        when(paymentService.process(200.0)).thenReturn(Mono.just(new PaymentResponse().success(false).message("Balance is low")));
+
+        StepVerifier.create(orderService.createOrder())
+                .verifyError(IllegalArgumentException.class);
     }
 
     @Test
