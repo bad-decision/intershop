@@ -27,6 +27,10 @@
             </svg>
             <span>КОРЗИНА</span>
         </a>
+        <p th:if="${#authentication}" style="margin-left: 20px">
+            <span th:text="${#authentication.getName()}" style="font-weight: bold"></span>
+            <a th:href="@{/logout}">Выйти</a>
+        </p>
     </div>
     <h1 style="text-align: center; margin: 20px;">Красное&Белое</h1>
     <h2 th:text="${message}" style="color: red"></h2>

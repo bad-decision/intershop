@@ -12,11 +12,14 @@ import java.util.List;
 @Repository
 public interface CartItemRepository extends ReactiveCrudRepository<CartItemEntity, Long> {
 
-    @Query("SELECT * FROM shop_cart_item i")
-    Flux<CartItemEntity> getCartItems();
+    @Query("SELECT * FROM shop_cart_item i where i.user_id = :userId")
+    Flux<CartItemEntity> getCartItems(Long userId);
 
     @Query("SELECT * FROM shop_cart_item i WHERE i.item_id = :itemId")
     Mono<CartItemEntity> findByItem(Long itemId);
+
+    @Query("SELECT * FROM shop_cart_item i WHERE i.item_id = :itemId and i.user_id = :userId")
+    Mono<CartItemEntity> findByItemAndUser(Long itemId, Long userId);
 
     @Query("SELECT * FROM shop_cart_item e WHERE e.item_id in (:itemIds)")
     Flux<CartItemEntity> findByItems(List<Long> itemIds);

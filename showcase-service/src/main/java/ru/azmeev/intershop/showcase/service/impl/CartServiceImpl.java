@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import ru.azmeev.intershop.showcase.model.entity.CartItemEntity;
 import ru.azmeev.intershop.showcase.model.entity.ItemEntity;
+import ru.azmeev.intershop.showcase.model.entity.UserEntity;
 import ru.azmeev.intershop.showcase.model.enums.ActionType;
 import ru.azmeev.intershop.showcase.repository.CartItemRepository;
 import ru.azmeev.intershop.showcase.service.CacheItemService;
@@ -31,8 +32,8 @@ public class CartServiceImpl implements CartService {
     private final ItemMapper itemMapper;
 
     @Override
-    public Mono<CartDto> getCart() {
-        return cartItemRepository.getCartItems()
+    public Mono<CartDto> getCart(UserEntity user) {
+        return cartItemRepository.getCartItems(user.getId())
                 .collectList()
                 .flatMap(cartItems -> {
                     List<Long> itemIds = cartItems.stream().map(CartItemEntity::getItemId).toList();
@@ -56,7 +57,7 @@ public class CartServiceImpl implements CartService {
                                         .total(cartTotal)
                                         .build();
 
-                                return paymentService.getBalance()
+                                return paymentService.getBalance(user)
                                         .map(balanceResponse -> {
                                             boolean isPaymentEnable = balanceResponse.getBalance() != null &&
                                                     balanceResponse.getBalance().compareTo(BigDecimal.valueOf(cartTotal)) >= 0;
@@ -70,10 +71,10 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional
-    public Mono<Void> updateCartItemCount(Long itemId, ActionType action) {
+    public Mono<Void> updateCartItemCount(Long itemId, ActionType action, Long userId) {
         Mono<ItemEntity> itemMono = cacheItemService.findById(itemId)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException(String.format("Item with id %s not found", itemId))));
-        Mono<Optional<CartItemEntity>> cartItemMono = cartItemRepository.findByItem(itemId)
+        Mono<Optional<CartItemEntity>> cartItemMono = cartItemRepository.findByItemAndUser(itemId, userId)
                 .map(Optional::of)
                 .defaultIfEmpty(Optional.empty());
         return Mono.zip(itemMono, cartItemMono)
@@ -86,6 +87,7 @@ public class CartServiceImpl implements CartService {
                                 cartItem = new CartItemEntity();
                                 cartItem.setItemId(itemId);
                                 cartItem.setCount(0L);
+                                cartItem.setUserId(userId);
                             }
                             cartItem.setCount(cartItem.getCount() + 1);
                             return cartItemRepository.save(cartItem).then();

@@ -15,12 +15,16 @@
         </svg>
         <span>ГЛАВНАЯ</span>
     </a>
-    <a href="/orders" style="margin: 0 20px">
+    <a href="/orders" style="margin-left: 20px">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-lines-fill" viewBox="0 0 16 16">
             <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5m.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1zm0 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1z"/>
         </svg>
         <span>ЗАКАЗЫ</span>
     </a>
+    <p th:if="${#authentication}" style="margin-left: 20px">
+        <span th:text="${#authentication.getName()}" style="font-weight: bold"></span>
+        <a th:href="@{/logout}">Выйти</a>
+    </p>
 </div>
 <h1 style="text-align: center; margin: 20px;">Корзина</h1>
 <table>
@@ -37,6 +41,7 @@
                             <p><b th:text="${cartItem.getPrice()}+' руб.'"></b></p>
                             <p><span th:text="${cartItem.getDescription()}"></span></p>
                             <form th:action="${'/cart/items/'+cartItem.getId()}" method="post" style="margin-top: 15px;">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                                 <button name="action" value="MINUS" class="btn btn-primary">-</button>
                                 <span th:text="${cartItem.getCount()}" style="margin: 5px"></span>
                                 <button name="action" value="PLUS" class="btn btn-primary">+</button>
@@ -56,6 +61,7 @@
     <tr>
         <td style="text-align:right">
             <form action="/buy" method="post" th:if="${!cart.isEmpty()}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                 <button class="btn btn-primary" th:disabled="${!cart.isPaymentEnable}">Купить</button>
             </form>
         </td>

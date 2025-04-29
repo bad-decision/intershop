@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
-import ru.azmeev.intershop.showcase.model.entity.CartItemEntity;
-import ru.azmeev.intershop.showcase.model.entity.ItemEntity;
-import ru.azmeev.intershop.showcase.model.entity.OrderEntity;
-import ru.azmeev.intershop.showcase.model.entity.OrderItemEntity;
+import ru.azmeev.intershop.showcase.model.entity.*;
 import ru.azmeev.intershop.showcase.repository.CartItemRepository;
 import ru.azmeev.intershop.showcase.repository.ItemRepository;
 import ru.azmeev.intershop.showcase.repository.OrderItemRepository;
@@ -36,8 +33,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public Mono<OrderEntity> createOrder() {
-        return cartItemRepository.getCartItems()
+    public Mono<OrderEntity> createOrder(UserEntity user) {
+        return cartItemRepository.getCartItems(user.getId())
                 .collectList()
                 .flatMap(cartItems -> {
                     List<Long> itemIds = cartItems.stream().map(CartItemEntity::getItemId).toList();
@@ -45,10 +42,11 @@ public class OrderServiceImpl implements OrderService {
                             .collectList()
                             .flatMap(items -> {
                                 double cartTotal = getCartTotal(cartItems, items);
-                                return paymentService.process(cartTotal)
+                                return paymentService.process(cartTotal, user)
                                         .flatMap(paymentResponse -> {
                                             if (Boolean.TRUE.equals(paymentResponse.getSuccess())) {
                                                 OrderEntity order = new OrderEntity();
+                                                order.setUserId(user.getId());
                                                 return orderRepository.save(order)
                                                         .flatMap(savedOrder -> {
                                                             order.setId(savedOrder.getId());
@@ -66,8 +64,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Mono<List<OrderDto>> getOrders() {
-        Mono<List<OrderEntity>> ordersMono = orderRepository.findAll().collectList();
+    public Mono<List<OrderDto>> getOrders(Long userId) {
+        Mono<List<OrderEntity>> ordersMono = orderRepository.findByUserId(userId).collectList();
         Mono<List<OrderItemEntity>> orderItemsMono = orderItemRepository.findAll().collectList();
         return Mono.zip(ordersMono, orderItemsMono, (orders, ordersItems) -> orders.stream()
                 .map(order -> {
@@ -78,8 +76,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Mono<OrderDto> getOrder(Long id) {
-        Mono<OrderEntity> orderMono = orderRepository.findById(id)
+    public Mono<OrderDto> getOrder(Long id, Long userId) {
+        Mono<OrderEntity> orderMono = orderRepository.findByIdAndUserId(id, userId)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException(String.format("Item with id %s not found", id))));
         Mono<List<OrderItemEntity>> orderItemsMono = orderItemRepository.findByOrderId(id).collectList();
         return Mono.zip(orderMono, orderItemsMono, orderMapper::toOrderDto);

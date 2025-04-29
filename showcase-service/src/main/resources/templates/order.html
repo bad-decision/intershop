@@ -27,6 +27,10 @@
         </svg>
         <span>ЗАКАЗЫ</span>
     </a>
+    <p th:if="${#authentication}" style="margin-left: 20px">
+        <span th:text="${#authentication.getName()}" style="font-weight: bold"></span>
+        <a th:href="@{/logout}">Выйти</a>
+    </p>
 </div>
 
 <h1 style="text-align:center" th:if="${newOrder}">Поздравляем! Успешная покупка! &#128578;</h1>

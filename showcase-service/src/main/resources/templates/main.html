@@ -9,22 +9,30 @@
 
 <body style="width: 80%; margin: 0 auto">
     <div style="display: flex; justify-content: right; height: 50px">
-        <a href="/orders">
+        <a href="/orders" th:if="${#authentication}">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-lines-fill" viewBox="0 0 16 16">
                 <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5m.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1zm0 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1z"/>
             </svg>
             <span>ЗАКАЗЫ</span>
         </a>
-        <a href="/cart" style="margin-left: 20px">
+        <a href="/cart" style="margin-left: 20px" th:if="${#authentication}">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-basket3-fill" viewBox="0 0 16 16">
                 <path d="M5.757 1.071a.5.5 0 0 1 .172.686L3.383 6h9.234L10.07 1.757a.5.5 0 1 1 .858-.514L13.783 6H15.5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H.5a.5.5 0 0 1-.5-.5v-1A.5.5 0 0 1 .5 6h1.717L5.07 1.243a.5.5 0 0 1 .686-.172zM2.468 15.426.943 9h14.114l-1.525 6.426a.75.75 0 0 1-.729.574H3.197a.75.75 0 0 1-.73-.574z"/>
             </svg>
             <span>КОРЗИНА</span>
         </a>
+        <div th:unless="${#authentication}">
+            <a th:href="@{/oauth2/authorization/keycloak}">Войти</a>
+        </div>
+        <p th:if="${#authentication}" style="margin-left: 20px">
+            <span th:text="${#authentication.getName()}" style="font-weight: bold"></span>
+            <a th:href="@{/logout}">Выйти</a>
+        </p>
     </div>
     <h1 style="text-align: center; margin: 20px;">Красное&Белое</h1>
 
     <form>
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
         <div style="display: flex; flex-direction: row; justify-content: center">
             <div class="form-floating" style="width:350px; display: flex">
                 <input id="search" style="width:300px;" name="search" th:value="${search}" class="form-control">
@@ -65,8 +73,9 @@
             <p><b th:text="${item.getTitle()}"></b></p>
             <p><b th:text="${item.getPrice()}+' руб.'"></b></p>
             <p><span th:text="${item.getDescription()}"></span></p>
-            <div>
+            <div th:if="${#authentication}">
                 <form th:action="${'/main/items/'+item.getId()}" method="post" accept-charset="UTF-8">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                     <div style="display: inline-block" th:if="${item.getCount()!=0}">
                         <button name="action" value="MINUS" class="btn btn-primary">-</button>
                         <span th:text="${item.getCount()}" style="margin: 5px"></span>

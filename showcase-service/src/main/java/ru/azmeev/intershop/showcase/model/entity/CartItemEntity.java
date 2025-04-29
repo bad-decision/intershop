@@ -17,4 +17,8 @@ public class CartItemEntity extends BaseEntity {
     @Column("COUNT")
     @NotNull
     private Long count;
+
+    @Column("USER_ID")
+    @NotNull
+    private Long userId;
 }

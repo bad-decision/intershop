@@ -35,6 +35,10 @@ public class PaymentRequest {
     @jakarta.annotation.Nonnull
     private BigDecimal amount;
 
+    public static final String JSON_PROPERTY_USER_ID = "userId";
+    @jakarta.annotation.Nonnull
+    private Long userId;
+
     public PaymentRequest() {
     }
 
@@ -68,6 +72,32 @@ public class PaymentRequest {
     }
 
 
+    public PaymentRequest userId(@jakarta.annotation.Nonnull Long userId) {
+
+        this.userId = userId;
+        return this;
+    }
+
+    /**
+     * User ID making the payment
+     * @return userId
+     */
+    @jakarta.annotation.Nonnull
+    @NotNull
+
+    @JsonProperty(JSON_PROPERTY_USER_ID)
+    @JsonInclude(value = JsonInclude.Include.ALWAYS)
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    @JsonProperty(JSON_PROPERTY_USER_ID)
+    @JsonInclude(value = JsonInclude.Include.ALWAYS)
+    public void setUserId(@jakarta.annotation.Nonnull Long userId) {
+        this.userId = userId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -77,12 +107,13 @@ public class PaymentRequest {
             return false;
         }
         PaymentRequest paymentRequest = (PaymentRequest) o;
-        return Objects.equals(this.amount, paymentRequest.amount);
+        return Objects.equals(this.amount, paymentRequest.amount) &&
+                Objects.equals(this.userId, paymentRequest.userId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(amount);
+        return Objects.hash(amount, userId);
     }
 
     @Override
@@ -90,6 +121,7 @@ public class PaymentRequest {
         StringBuilder sb = new StringBuilder();
         sb.append("class PaymentRequest {\n");
         sb.append("    amount: ").append(toIndentedString(amount)).append("\n");
+        sb.append("    userId: ").append(toIndentedString(userId)).append("\n");
         sb.append("}");
         return sb.toString();
     }
@@ -104,6 +136,5 @@ public class PaymentRequest {
         }
         return o.toString().replace("\n", "\n    ");
     }
-
 }
 
