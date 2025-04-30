@@ -10,10 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import ru.azmeev.intershop.showcase.model.entity.CartItemEntity;
-import ru.azmeev.intershop.showcase.model.entity.ItemEntity;
-import ru.azmeev.intershop.showcase.model.entity.OrderEntity;
-import ru.azmeev.intershop.showcase.model.entity.OrderItemEntity;
+import ru.azmeev.intershop.showcase.model.entity.*;
 import ru.azmeev.intershop.showcase.repository.CartItemRepository;
 import ru.azmeev.intershop.showcase.repository.ItemRepository;
 import ru.azmeev.intershop.showcase.repository.OrderItemRepository;
@@ -50,11 +47,13 @@ class OrderServiceTest {
 
     private static final Long ORDER_ID = 1L;
     private static final Long ITEM_ID = 1L;
+    private static final Long USER_ID = 1L;
     private static final Long CART_ITEM_ID = 1L;
     private CartItemEntity testCartItem;
     private OrderEntity testOrder;
     private OrderItemEntity testOrderItem;
     private ItemEntity testItem;
+    private UserEntity user;
 
     @BeforeEach
     void prepare() {
@@ -77,18 +76,22 @@ class OrderServiceTest {
 
         testOrder = new OrderEntity();
         testOrder.setId(ORDER_ID);
+
+        user = new UserEntity();
+        user.setUsername("user01");
+        user.setId(USER_ID);
     }
 
     @Test
     void createOrder_success() {
-        when(cartItemRepository.getCartItems()).thenReturn(Flux.just(testCartItem));
+        when(cartItemRepository.getCartItems(USER_ID)).thenReturn(Flux.just(testCartItem));
         when(itemRepository.findByIds(List.of(ITEM_ID))).thenReturn(Flux.just(testItem));
         when(orderRepository.save(any())).thenReturn(Mono.just(testOrder));
         when(orderItemRepository.saveAll((Iterable<OrderItemEntity>) any())).thenReturn(Flux.empty());
         when(cartItemRepository.deleteAll(List.of(testCartItem))).thenReturn(Flux.empty().then());
-        when(paymentService.process(200.0)).thenReturn(Mono.just(new PaymentResponse().success(true).remainingBalance(BigDecimal.valueOf(100.0))));
+        when(paymentService.process(200.0, user)).thenReturn(Mono.just(new PaymentResponse().success(true).remainingBalance(BigDecimal.valueOf(100.0))));
 
-        StepVerifier.create(orderService.createOrder())
+        StepVerifier.create(orderService.createOrder(user))
                 .assertNext(order -> {
                     assertEquals(testOrder.getId(), order.getId());
                 })
@@ -100,48 +103,48 @@ class OrderServiceTest {
 
     @Test
     void createOrder_paymentError() {
-        when(cartItemRepository.getCartItems()).thenReturn(Flux.just(testCartItem));
+        when(cartItemRepository.getCartItems(USER_ID)).thenReturn(Flux.just(testCartItem));
         when(itemRepository.findByIds(List.of(ITEM_ID))).thenReturn(Flux.just(testItem));
-        when(paymentService.process(200.0)).thenReturn(Mono.just(new PaymentResponse().success(false).message("Balance is low")));
+        when(paymentService.process(200.0, user)).thenReturn(Mono.just(new PaymentResponse().success(false).message("Balance is low")));
 
-        StepVerifier.create(orderService.createOrder())
+        StepVerifier.create(orderService.createOrder(user))
                 .verifyError(IllegalArgumentException.class);
     }
 
     @Test
     void getOrders_success() {
-        when(orderRepository.findAll()).thenReturn(Flux.just(testOrder));
-        when(orderItemRepository.findAll()).thenReturn(Flux.just(testOrderItem));
+        when(orderRepository.findByUserId(USER_ID)).thenReturn(Flux.just(testOrder));
+        when(orderItemRepository.findByOrderIds(List.of(testOrder.getId()))).thenReturn(Flux.just(testOrderItem));
 
-        StepVerifier.create(orderService.getOrders())
+        StepVerifier.create(orderService.getOrders(USER_ID))
                 .assertNext(orders -> {
                     assertEquals(1, orders.size());
                     assertEquals(testOrder.getId(), orders.get(0).getId());
                 })
                 .verifyComplete();
-        verify(orderRepository, times(1)).findAll();
-        verify(orderItemRepository, times(1)).findAll();
+        verify(orderRepository, times(1)).findByUserId(USER_ID);
+        verify(orderItemRepository, times(1)).findByOrderIds(List.of(testOrder.getId()));
     }
 
     @Test
     void getOrder_success() {
-        when(orderRepository.findById(ORDER_ID)).thenReturn(Mono.just(testOrder));
+        when(orderRepository.findByIdAndUserId(ORDER_ID, USER_ID)).thenReturn(Mono.just(testOrder));
         when(orderItemRepository.findByOrderId(ORDER_ID)).thenReturn(Flux.just(testOrderItem));
 
-        StepVerifier.create(orderService.getOrder(ORDER_ID))
+        StepVerifier.create(orderService.getOrder(ORDER_ID, USER_ID))
                 .assertNext(order -> {
                     assertEquals(testOrder.getId(), order.getId());
                 })
                 .verifyComplete();
-        verify(orderRepository, times(1)).findById(ORDER_ID);
+        verify(orderRepository, times(1)).findByIdAndUserId(ORDER_ID, USER_ID);
     }
 
     @Test
     void getOrder_throwException() {
-        when(orderRepository.findById(ORDER_ID)).thenReturn(Mono.empty());
+        when(orderRepository.findByIdAndUserId(ORDER_ID, USER_ID)).thenReturn(Mono.empty());
         when(orderItemRepository.findByOrderId(ORDER_ID)).thenReturn(Flux.empty());
 
-        StepVerifier.create(orderService.getOrder(ORDER_ID))
+        StepVerifier.create(orderService.getOrder(ORDER_ID, USER_ID))
                 .verifyError(IllegalArgumentException.class);
     }
 }

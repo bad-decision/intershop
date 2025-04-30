@@ -27,8 +27,6 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfiguration {
-    private static final String USER_PRINCIPAL_NAME = "userPrincipalName";
-
     @Autowired
     private ReactiveClientRegistrationRepository clientRegistrationRepository;
     @Autowired
@@ -72,9 +70,7 @@ public class SecurityConfiguration {
     }
 
     protected String getOidcUserUsername(OidcUser oidcUser) {
-        return oidcUser.hasClaim(USER_PRINCIPAL_NAME) ?
-                oidcUser.getClaimAsString(USER_PRINCIPAL_NAME) :
-                oidcUser.getPreferredUsername();
+        return oidcUser.getPreferredUsername();
     }
 
     protected Mono<UserEntity> initUser(OidcUser oidcUser) {

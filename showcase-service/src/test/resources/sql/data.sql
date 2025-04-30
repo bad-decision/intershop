@@ -16,3 +16,17 @@ VALUES
     (10, 'ITEM10', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent euismod leo leo, non lacinia felis consequat vel. Duis egestas sem non ex euismod, quis faucibus justo sagittis. In porttitor ante in ligula iaculis finibus. Suspendisse potenti. Donec eu faucibus velit, sit amet auctor ex. Sed orci ex, tincidunt at ligula ut, posuere semper diam.', 'item10.jpg', 70);
 
 SELECT SETVAL('shop_item_id_seq', (SELECT MAX(id) FROM shop_item));
+
+TRUNCATE SHOP_USER CASCADE;
+INSERT INTO SHOP_USER (id, username)
+VALUES (1, 'user01'),
+       (2, 'user02');
+
+TRUNCATE SHOP_ORDER CASCADE;
+
+
+INSERT INTO SHOP_ORDER (id, user_id)
+VALUES (1, 1),
+       (2, 1);
+
+SELECT SETVAL('shop_order_id_seq', (SELECT MAX(id) FROM shop_order));

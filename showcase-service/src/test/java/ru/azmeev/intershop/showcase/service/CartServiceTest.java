@@ -14,6 +14,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import ru.azmeev.intershop.showcase.model.entity.CartItemEntity;
 import ru.azmeev.intershop.showcase.model.entity.ItemEntity;
+import ru.azmeev.intershop.showcase.model.entity.UserEntity;
 import ru.azmeev.intershop.showcase.model.enums.ActionType;
 import ru.azmeev.intershop.showcase.repository.CartItemRepository;
 import ru.azmeev.intershop.showcase.service.impl.CartServiceImpl;
@@ -42,8 +43,10 @@ class CartServiceTest {
 
     private static final Long CART_ITEM_ID = 1L;
     private static final Long ITEM_ID = 1L;
+    private static final Long USER_ID = 1L;
     private ItemEntity testItem;
     private CartItemEntity testCartItem;
+    private UserEntity user;
 
     @BeforeEach
     void prepare() {
@@ -56,6 +59,10 @@ class CartServiceTest {
         testCartItem.setId(CART_ITEM_ID);
         testCartItem.setCount(2L);
         testCartItem.setItemId(ITEM_ID);
+
+        user = new UserEntity();
+        user.setId(USER_ID);
+        user.setUsername("user01");
     }
 
     @AfterAll
@@ -65,38 +72,38 @@ class CartServiceTest {
 
     @Test
     void getCart_success() {
-        when(cartItemRepository.getCartItems()).thenReturn(Flux.just(testCartItem));
+        when(cartItemRepository.getCartItems(USER_ID)).thenReturn(Flux.just(testCartItem));
         when(cacheItemService.findByIds(List.of(ITEM_ID))).thenReturn(Mono.just(List.of(testItem)));
-        when(paymentService.getBalance()).thenReturn(Mono.just(new BalanceResponse().balance(BigDecimal.valueOf(1000.0))));
-        StepVerifier.create(cartService.getCart())
+        when(paymentService.getBalance(user)).thenReturn(Mono.just(new BalanceResponse().balance(BigDecimal.valueOf(1000.0))));
+        StepVerifier.create(cartService.getCart(user))
                 .assertNext(cart -> {
                     assertNotNull(cart);
                     assertEquals(1, cart.getCartItems().size());
                     assertEquals(200.0, cart.getTotal());
                 })
                 .verifyComplete();
-        verify(cartItemRepository, times(1)).getCartItems();
+        verify(cartItemRepository, times(1)).getCartItems(USER_ID);
     }
 
     @Test
     void getEmptyCart_success() {
-        when(cartItemRepository.getCartItems()).thenReturn(Flux.empty());
-        StepVerifier.create(cartService.getCart())
+        when(cartItemRepository.getCartItems(USER_ID)).thenReturn(Flux.empty());
+        StepVerifier.create(cartService.getCart(user))
                 .assertNext(cart -> {
                     assertNotNull(cart);
                     assertEquals(0, cart.getCartItems().size());
                     assertEquals(0, cart.getTotal());
                 })
                 .verifyComplete();
-        verify(cartItemRepository, times(1)).getCartItems();
+        verify(cartItemRepository, times(1)).getCartItems(USER_ID);
     }
 
     @Test
     void plusCartItemCount_success() {
         when(cacheItemService.findById(ITEM_ID)).thenReturn(Mono.just(testItem));
-        when(cartItemRepository.findByItem(ITEM_ID)).thenReturn(Mono.empty());
+        when(cartItemRepository.findByItemAndUser(ITEM_ID, USER_ID)).thenReturn(Mono.empty());
         when(cartItemRepository.save(any())).thenReturn(Mono.empty());
-        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.PLUS))
+        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.PLUS, USER_ID))
                 .verifyComplete();
         verify(cartItemRepository, times(1)).save(any());
     }
@@ -104,14 +111,14 @@ class CartServiceTest {
     @Test
     void minusCartItemCount_success() {
         when(cacheItemService.findById(ITEM_ID)).thenReturn(Mono.just(testItem));
-        when(cartItemRepository.findByItem(ITEM_ID)).thenReturn(Mono.just(testCartItem));
+        when(cartItemRepository.findByItemAndUser(ITEM_ID, USER_ID)).thenReturn(Mono.just(testCartItem));
         when(cartItemRepository.save(any())).thenReturn(Mono.empty());
         when(cartItemRepository.delete(any())).thenReturn(Mono.empty());
 
-        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.MINUS))
+        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.MINUS, USER_ID))
                 .verifyComplete();
         verify(cartItemRepository, times(1)).save(any());
-        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.MINUS))
+        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.MINUS, USER_ID))
                 .verifyComplete();
         verify(cartItemRepository, times(1)).delete(any());
     }
@@ -119,10 +126,10 @@ class CartServiceTest {
     @Test
     void deleteCartItemCount_success() {
         when(cacheItemService.findById(ITEM_ID)).thenReturn(Mono.just(testItem));
-        when(cartItemRepository.findByItem(ITEM_ID)).thenReturn(Mono.just(testCartItem));
+        when(cartItemRepository.findByItemAndUser(ITEM_ID, USER_ID)).thenReturn(Mono.just(testCartItem));
         when(cartItemRepository.delete(any())).thenReturn(Mono.empty());
 
-        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.DELETE))
+        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.DELETE, USER_ID))
                 .verifyComplete();
         verify(cartItemRepository, times(1)).delete(any());
     }
@@ -130,9 +137,9 @@ class CartServiceTest {
     @Test
     void plusCartItemCount_throwException() {
         when(cacheItemService.findById(ITEM_ID)).thenReturn(Mono.empty());
-        when(cartItemRepository.findByItem(ITEM_ID)).thenReturn(Mono.just(testCartItem));
+        when(cartItemRepository.findByItemAndUser(ITEM_ID, USER_ID)).thenReturn(Mono.just(testCartItem));
 
-        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.PLUS))
+        StepVerifier.create(cartService.updateCartItemCount(ITEM_ID, ActionType.PLUS, USER_ID))
                 .verifyError(IllegalArgumentException.class);
     }
 }

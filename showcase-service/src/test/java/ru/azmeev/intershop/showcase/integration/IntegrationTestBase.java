@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.core.io.Resource;
@@ -19,6 +20,7 @@ import reactor.core.publisher.Mono;
 @ActiveProfiles("test")
 @Testcontainers
 @ExtendWith(MockitoExtension.class)
+@AutoConfigureWebTestClient
 public abstract class IntegrationTestBase {
 
     @Autowired

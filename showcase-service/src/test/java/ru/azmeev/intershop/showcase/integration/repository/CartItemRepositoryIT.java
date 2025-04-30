@@ -20,6 +20,7 @@ class CartItemRepositoryIT extends IntegrationTestBase {
     @Autowired
     private ItemRepository itemRepository;
     private static final Long ITEM_ID = 1L;
+    private static final Long USER_ID = 1L;
     private static final Long ITEM_COUNT = 2L;
     private ItemEntity expectedItem;
 
@@ -31,12 +32,13 @@ class CartItemRepositoryIT extends IntegrationTestBase {
         CartItemEntity cartItem = new CartItemEntity();
         cartItem.setCount(ITEM_COUNT);
         cartItem.setItemId(ITEM_ID);
+        cartItem.setUserId(USER_ID);
         cartItemRepository.save(cartItem).block();
     }
 
     @Test
     void getCartItems_mustReturnList() {
-        List<CartItemEntity> cartItems = cartItemRepository.getCartItems().collectList().block();
+        List<CartItemEntity> cartItems = cartItemRepository.getCartItems(USER_ID).collectList().block();
         Long itemId = cartItems.get(0).getItemId();
         assertEquals(expectedItem.getId(), itemId);
         assertEquals(ITEM_COUNT, cartItems.get(0).getCount());

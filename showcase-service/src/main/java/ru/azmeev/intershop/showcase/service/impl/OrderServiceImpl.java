@@ -65,14 +65,19 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Mono<List<OrderDto>> getOrders(Long userId) {
-        Mono<List<OrderEntity>> ordersMono = orderRepository.findByUserId(userId).collectList();
-        Mono<List<OrderItemEntity>> orderItemsMono = orderItemRepository.findAll().collectList();
-        return Mono.zip(ordersMono, orderItemsMono, (orders, ordersItems) -> orders.stream()
-                .map(order -> {
-                    List<OrderItemEntity> orderItems = ordersItems.stream().filter(x -> x.getOrderId().equals(order.getId())).toList();
-                    return orderMapper.toOrderDto(order, orderItems);
-                })
-                .toList());
+        return orderRepository.findByUserId(userId)
+                .collectList()
+                .flatMap(orders -> {
+                    List<Long> orderIds = orders.stream().map(BaseEntity::getId).toList();
+                    return orderItemRepository.findByOrderIds(orderIds)
+                            .collectList()
+                            .map(ordersItems -> orders.stream()
+                                    .map(order -> {
+                                        List<OrderItemEntity> orderItems = ordersItems.stream().filter(x -> x.getOrderId().equals(order.getId())).toList();
+                                        return orderMapper.toOrderDto(order, orderItems);
+                                    })
+                                    .toList());
+                });
     }
 
     @Override
