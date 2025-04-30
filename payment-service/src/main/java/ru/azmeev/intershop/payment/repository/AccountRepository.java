@@ -1,8 +1,14 @@
 package ru.azmeev.intershop.payment.repository;
 
-import java.math.BigDecimal;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Mono;
+import ru.azmeev.intershop.payment.model.AccountEntity;
 
-public interface AccountRepository {
+@Repository
+public interface AccountRepository extends ReactiveCrudRepository<AccountEntity, Long> {
 
-    BigDecimal getBalance();
+    @Query("SELECT * FROM payment_account i WHERE i.username = :username")
+    Mono<AccountEntity> getAccount(String username);
 }

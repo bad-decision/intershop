@@ -67,12 +67,19 @@ components:
   schemas:
     BalanceResponse:
       type: object
+      required:
+        - balance
+        - username
       properties:
         balance:
           type: number
           format: BigDecimal
           description: Current account balance
           example: 1500.50
+        username:
+          type: string
+          description: Username
+          example: user01
     PaymentRequest:
       type: object
       required:

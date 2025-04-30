@@ -1,4 +1,21 @@
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8090/realms/master
+  r2dbc:
+    url: ${R2DBC_DATASOURCE_URL:r2dbc:postgresql://localhost:5432/payment}
+    username: ${DATASOURCE_USER:payment}
+    password: ${DATASOURCE_PASSWORD:payment}
+  liquibase:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/payment}
+    user: ${DATASOURCE_USER:payment}
+    password: ${DATASOURCE_PASSWORD:payment}
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:sql/data.sql
   application:
     name: payment-service
 server:

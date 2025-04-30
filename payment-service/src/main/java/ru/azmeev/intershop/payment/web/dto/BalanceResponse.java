@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.annotation.Generated;
 import jakarta.validation.Valid;
-import org.springframework.lang.Nullable;
+import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.util.Objects;
@@ -13,10 +13,24 @@ import java.util.Objects;
  * BalanceResponse
  */
 
-@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-04-16T11:24:06.010167700+03:00[Europe/Moscow]", comments = "Generator version: 7.12.0")
+@Generated(value = "org.openapitools.codegen.languages.SpringCodegen", date = "2025-04-30T09:01:32.998419300+03:00[Europe/Moscow]", comments = "Generator version: 7.12.0")
 public class BalanceResponse {
 
-    private @Nullable BigDecimal balance;
+    private BigDecimal balance;
+
+    private String username;
+
+    public BalanceResponse() {
+        super();
+    }
+
+    /**
+     * Constructor with only required parameters
+     */
+    public BalanceResponse(BigDecimal balance, String username) {
+        this.balance = balance;
+        this.username = username;
+    }
 
     public BalanceResponse balance(BigDecimal balance) {
         this.balance = balance;
@@ -28,8 +42,9 @@ public class BalanceResponse {
      *
      * @return balance
      */
+    @NotNull
     @Valid
-    @Schema(name = "balance", example = "1500.5", description = "Current account balance", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
+    @Schema(name = "balance", example = "1500.5", description = "Current account balance", requiredMode = Schema.RequiredMode.REQUIRED)
     @JsonProperty("balance")
     public BigDecimal getBalance() {
         return balance;
@@ -37,6 +52,27 @@ public class BalanceResponse {
 
     public void setBalance(BigDecimal balance) {
         this.balance = balance;
+    }
+
+    public BalanceResponse username(String username) {
+        this.username = username;
+        return this;
+    }
+
+    /**
+     * Username
+     *
+     * @return username
+     */
+    @NotNull
+    @Schema(name = "username", example = "user01", description = "Username", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonProperty("username")
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     @Override
@@ -48,12 +84,13 @@ public class BalanceResponse {
             return false;
         }
         BalanceResponse balanceResponse = (BalanceResponse) o;
-        return Objects.equals(this.balance, balanceResponse.balance);
+        return Objects.equals(this.balance, balanceResponse.balance) &&
+                Objects.equals(this.username, balanceResponse.username);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(balance);
+        return Objects.hash(balance, username);
     }
 
     @Override
@@ -61,6 +98,7 @@ public class BalanceResponse {
         StringBuilder sb = new StringBuilder();
         sb.append("class BalanceResponse {\n");
         sb.append("    balance: ").append(toIndentedString(balance)).append("\n");
+        sb.append("    username: ").append(toIndentedString(username)).append("\n");
         sb.append("}");
         return sb.toString();
     }

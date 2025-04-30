@@ -17,21 +17,25 @@ public class PaymentServiceImpl implements PaymentService {
     private final AccountRepository accountRepository;
 
     @Override
-    public Mono<BalanceResponse> getBalance() {
-        return Mono.just(new BalanceResponse()
-                .balance(accountRepository.getBalance()));
+    public Mono<BalanceResponse> getBalance(String username) {
+        return accountRepository.getAccount(username)
+                .map(account -> new BalanceResponse()
+                        .username(account.getUsername())
+                        .balance(account.getBalance()));
     }
 
     @Override
-    public Mono<PaymentResponse> processPayment(PaymentRequest request) {
-        return getBalance().flatMap(balanceResponse -> {
-            if (balanceResponse.getBalance().compareTo(request.getAmount()) < 0) {
-                return Mono.error(new InsufficientFundsException(balanceResponse.getBalance(), request.getAmount()));
+    public Mono<PaymentResponse> processPayment(PaymentRequest request, String username) {
+        return accountRepository.getAccount(username).flatMap(account -> {
+            if (account.getBalance().compareTo(request.getAmount()) < 0) {
+                return Mono.error(new InsufficientFundsException(account.getBalance(), request.getAmount()));
             } else {
-                return Mono.just(new PaymentResponse()
-                        .success(true)
-                        .remainingBalance(balanceResponse.getBalance().subtract(request.getAmount()))
-                        .message("Payment processed successfully"));
+                account.setBalance(account.getBalance().subtract(request.getAmount()));
+                return accountRepository.save(account)
+                        .flatMap(savedAccount -> Mono.just(new PaymentResponse()
+                                .success(true)
+                                .remainingBalance(savedAccount.getBalance())
+                                .message("Payment processed successfully")));
             }
         });
     }

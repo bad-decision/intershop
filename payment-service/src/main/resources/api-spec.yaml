@@ -67,16 +67,24 @@ components:
   schemas:
     BalanceResponse:
       type: object
+      required:
+        - balance
+        - username
       properties:
         balance:
           type: number
           format: BigDecimal
           description: Current account balance
           example: 1500.50
+        username:
+          type: string
+          description: Username
+          example: user01
     PaymentRequest:
       type: object
       required:
         - amount
+        - userId
       properties:
         amount:
           type: number
@@ -84,6 +92,11 @@ components:
           minimum: 0.01
           description: Order amount to deduct from balance
           example: 99.99
+        userId:
+          type: integer
+          format: int64
+          description: User ID making the payment
+          example: 12345
     PaymentResponse:
       type: object
       properties:

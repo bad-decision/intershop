@@ -7,7 +7,7 @@ import ru.azmeev.intershop.payment.web.dto.PaymentResponse;
 
 public interface PaymentService {
 
-    Mono<BalanceResponse> getBalance();
+    Mono<BalanceResponse> getBalance(String username);
 
-    Mono<PaymentResponse> processPayment(PaymentRequest request);
+    Mono<PaymentResponse> processPayment(PaymentRequest request, String username);
 }
