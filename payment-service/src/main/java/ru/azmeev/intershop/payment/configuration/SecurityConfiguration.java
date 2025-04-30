@@ -13,6 +13,7 @@ public class SecurityConfiguration {
     @Bean
     public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity security) {
         return security
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(requests -> requests
                         .anyExchange().authenticated()
                 )
