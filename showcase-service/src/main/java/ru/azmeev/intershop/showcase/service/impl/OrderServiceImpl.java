@@ -15,6 +15,7 @@ import ru.azmeev.intershop.showcase.web.dto.OrderDto;
 import ru.azmeev.intershop.showcase.web.mapper.OrderItemMapper;
 import ru.azmeev.intershop.showcase.web.mapper.OrderMapper;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -69,6 +70,10 @@ public class OrderServiceImpl implements OrderService {
                 .collectList()
                 .flatMap(orders -> {
                     List<Long> orderIds = orders.stream().map(BaseEntity::getId).toList();
+                    if (orderIds.size() == 0) {
+                        return Mono.just(new ArrayList<>());
+                    }
+
                     return orderItemRepository.findByOrderIds(orderIds)
                             .collectList()
                             .map(ordersItems -> orders.stream()

@@ -8,15 +8,18 @@ services:
       dockerfile: Dockerfile
     container_name: showcase-service
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:35432/shop
-      R2DBC_DATASOURCE_URL: r2dbc:postgresql://host.docker.internal:35432/shop
+      SPRING_DATASOURCE_URL: jdbc:postgresql://showcase-postgres:5432/shop
+      R2DBC_DATASOURCE_URL: r2dbc:postgresql://showcase-postgres:5432/shop
       REDIS_HOST: showcase-redis
       PAYMENT_URL: http://payment-service:8081
+      KEYCLOAK_URL: shop-keycloak:8091
+      CLIENT_SECRET: H8PKX4n0lFfDpPNQQyQjiBss9dT2DZuD
     ports:
-      - "${SERVER_PORT:-8080}:8080"
+      - "8080:8080"
     depends_on:
-      - showcase-postgres
-      - showcase-redis
+      - keycloak
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - shop
 
@@ -26,8 +29,17 @@ services:
       context: ./payment-service
       dockerfile: Dockerfile
     container_name: payment-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-postgres:5432/payment
+      R2DBC_DATASOURCE_URL: r2dbc:postgresql://payment-postgres:5432/payment
+      ISSUER_URI: http://shop-keycloak:8091/realms/master
     ports:
-      - "${SERVER_PORT:-8081}:8081"
+      - "8081:8081"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - payment-postgres
+      - keycloak
     networks:
       - shop
 
@@ -40,6 +52,32 @@ services:
     networks:
       - shop
 
+  keycloak:
+    restart: no
+    image: quay.io/keycloak/keycloak:26.1.2
+    container_name: shop-keycloak
+    environment:
+      KC_IMPORT: ./master-realm.json
+      KC_HOSTNAME: shop-keycloak
+      KC_PROXY: edge
+      KC_DB: postgres
+      KC_HTTP_PORT: 8091
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: password
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+    command: ["start", "--import-realm"]
+    depends_on:
+      - keycloak-postgres
+    networks:
+      - shop
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+    ports:
+      - "8091:8091"
+
   showcase-postgres:
     restart: always
     image: postgres:16.1
@@ -51,13 +89,39 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --data-checksums"
     volumes:
       - shop-volume-postgres:/var/lib/postgresql/data
-    ports:
-      - "35432:5432"
+    networks:
+      - shop
+
+  payment-postgres:
+    restart: always
+    image: postgres:16.1
+    container_name: payment-postgres
+    environment:
+      POSTGRES_USER: ${PAYMENT_DB_USERNAME:-payment}
+      POSTGRES_PASSWORD: ${PAYMENT_DB_PASSWORD:-payment}
+      POSTGRES_DB: ${PAYMENT_DB_NAME:-payment}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --data-checksums"
+    volumes:
+      - payment-volume-postgres:/var/lib/postgresql/data
+    networks:
+      - shop
+
+  keycloak-postgres:
+    image: postgres:16.1
+    container_name: keycloak-postgres
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+    volumes:
+      - kc-volume-postgres:/var/lib/postgresql/data
     networks:
       - shop
 
 volumes:
   shop-volume-postgres:
+  payment-volume-postgres:
+  kc-volume-postgres:
 
 networks:
   shop:

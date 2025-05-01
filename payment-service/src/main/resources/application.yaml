@@ -3,7 +3,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8090/realms/master
+          issuer-uri: ${ISSUER_URI:http://localhost:8090/realms/master}
   r2dbc:
     url: ${R2DBC_DATASOURCE_URL:r2dbc:postgresql://localhost:5432/payment}
     username: ${DATASOURCE_USER:payment}

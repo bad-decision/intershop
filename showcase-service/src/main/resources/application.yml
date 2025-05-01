@@ -22,18 +22,13 @@ spring:
       client:
         provider:
           keycloak:
-            issuer-uri: http://localhost:8090/realms/master
-            authorization-uri: http://localhost:8090/realms/master/protocol/openid-connect/auth
-            token-uri: http://localhost:8090/realms/master/protocol/openid-connect/token
-            user-info-uri: http://localhost:8090/realms/master/protocol/openid-connect/userinfo
-            user-name-attribute: sub
-            jwk-set-uri: http://localhost:8090/realms/master/protocol/openid-connect/certs
+            issuer-uri: http://${KEYCLOAK_URL:localhost:8099}/realms/master
         registration:
           keycloak:
             authorizationGrantType: authorization_code
             provider: keycloak
             client-id: showcase-service
-            client-secret: JIN2RD9TLJJj5zK61DeKHw7YNSe3kQR5
+            client-secret: ${CLIENT_SECRET:H8PKX4n0lFfDpPNQQyQjiBss9dT2DZuD}
             redirect-uri: '{baseUrl}/{action}/oauth2/code/{registrationId}'
             scope: openid, profile, email
 server:
